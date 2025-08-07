@@ -379,10 +379,35 @@
             });
         }
 
+        function setupPersistentSearch(choicesInstance) {
+            const inputElement = choicesInstance.input.element;
+            const containerElement = choicesInstance.containerOuter.element;
+            let lastSearchValue = '';
+
+            inputElement.addEventListener('keyup', (event) => {
+                lastSearchValue = event.target.value;
+            });
+
+            containerElement.addEventListener('addItem', () => {
+                if (lastSearchValue) {
+                    setTimeout(() => {
+                        inputElement.value = lastSearchValue;
+                        choicesInstance.showDropdown();
+                        inputElement.dispatchEvent(new Event('keyup', { bubbles: true }));
+                    }, 1);
+                }
+            });
+            
+            containerElement.addEventListener('hideDropdown', () => {
+                lastSearchValue = '';
+            });
+        }
+
         function initializeFilters() {
             const choicesConfig = () => ({ 
                 removeItemButton: true, 
                 searchPlaceholderValue: 'Buscar...',
+                searchHint: '',
                 classNames: { containerOuter: 'choices' } 
             });
 
@@ -394,15 +419,19 @@
             
             choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig());
             choicesPE.estilo.setChoices(peEstilos, 'value', 'label', false);
+            setupPersistentSearch(choicesPE.estilo);
             
             choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig());
             choicesPE.pais.setChoices(pePaises, 'value', 'label', false);
+            setupPersistentSearch(choicesPE.pais);
 
             choicesPE.comentario = new Choices('#filter-pe-comentario', choicesConfig());
             choicesPE.comentario.setChoices(peComentarios, 'value', 'label', false);
+            setupPersistentSearch(choicesPE.comentario);
 
             choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig());
             choicesPE.escuchada.setChoices(peEscuchadaOpts, 'value', 'label', false);
+            setupPersistentSearch(choicesPE.escuchada);
             
             document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
             document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
@@ -418,12 +447,15 @@
             
             choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig());
             choicesE.estilo.setChoices(eEstilos, 'value', 'label', false);
+            setupPersistentSearch(choicesE.estilo);
             
             choicesE.pais = new Choices('#filter-e-pais', choicesConfig());
             choicesE.pais.setChoices(ePaises, 'value', 'label', false);
+            setupPersistentSearch(choicesE.pais);
             
             choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig());
             choicesE.seguir.setChoices(eSeguirOpts, 'value', 'label', false);
+            setupPersistentSearch(choicesE.seguir);
             
             document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
             document.getElementById('filter-e-estilo').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
