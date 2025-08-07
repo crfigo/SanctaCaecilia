@@ -35,30 +35,83 @@
         }
         /* Estilos para Choices.js en tema oscuro */
         .choices {
-            background-color: #4a5568; /* gray-700 */
-            border-color: #718096; /* gray-600 */
+            background-color: #374151; /* gray-700 */
         }
         .choices__inner {
-            background-color: #4a5568; /* gray-700 */
-            border-color: #718096; /* gray-600 */
-            color: #e2e8f0; /* gray-300 */
+            background-color: #374151; /* gray-700 */
+            border-color: #4b5563; /* gray-600 */
+            color: #f3f4f6; /* gray-100 - Mayor contraste */
+            min-height: 42px; /* Altura consistente */
+            padding: 0.5rem 0.75rem;
+            display: flex;
+            align-items: center;
         }
         .choices__list--dropdown {
             background-color: #2d3748; /* gray-800 */
-            border-color: #718096; /* gray-600 */
+            border-color: #4b5563; /* gray-600 */
         }
         .choices__item--choice {
-            color: #e2e8f0; /* gray-300 */
+            color: #f3f4f6; /* gray-100 - Mayor contraste */
         }
         .choices__item--selectable.is-highlighted {
             background-color: #3b82f6; /* blue-500 */
         }
         .choices__input {
-             background-color: #4a5568; /* gray-700 */
-             color: #e2e8f0; /* gray-300 */
+             background-color: transparent;
+             color: #f3f4f6; /* gray-100 - Mayor contraste */
         }
         .choices__item--selected {
             background-color: #3b82f6; /* blue-500 */
+        }
+
+        /* Tabla responsiva para móviles */
+        @media screen and (max-width: 767px) {
+            .responsive-table thead {
+                display: none;
+            }
+            .responsive-table tbody, .responsive-table tr, .responsive-table td {
+                display: block;
+                width: 100%;
+            }
+            .responsive-table tr {
+                margin-bottom: 1.5rem;
+                border: 1px solid #4b5563; /* gray-600 */
+                border-radius: 0.5rem; /* rounded-lg */
+                overflow: hidden;
+            }
+            .responsive-table td {
+                display: flex;
+                justify-content: space-between;
+                align-items: center;
+                padding: 0.75rem 1rem;
+                text-align: right;
+                border-bottom: 1px solid #374151; /* gray-700 */
+            }
+            .responsive-table td:last-child {
+                border-bottom: 0;
+            }
+            .responsive-table td::before {
+                content: attr(data-label);
+                font-weight: 600;
+                color: #9ca3af; /* gray-400 */
+                text-align: left;
+                margin-right: 1rem;
+            }
+            /* Celda de Artista como cabecera de la tarjeta */
+            .responsive-table td:first-child {
+                background-color: #374151; /* gray-700 */
+                color: white;
+                font-weight: 700;
+                font-size: 1.125rem; /* text-lg */
+                justify-content: center;
+            }
+            .responsive-table td:first-child::before {
+                display: none;
+            }
+            .responsive-table td[data-label="Links"] .flex {
+                justify-content: flex-end;
+                flex-grow: 1;
+            }
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -101,9 +154,9 @@
             <div id="por-escuchar-list" class="tab-content">
                 <div class="bg-gray-800 p-4 rounded-lg mb-6">
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                        <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center">
+                        <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         <select id="filter-pe-estilo" multiple></select>
                         <select id="filter-pe-pais" multiple></select>
                         <select id="filter-pe-escuchada" multiple></select>
@@ -113,7 +166,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto bg-gray-800 rounded-lg">
-                    <table class="min-w-full text-sm text-left text-gray-300">
+                    <table class="min-w-full text-sm text-left text-gray-300 responsive-table">
                         <thead class="text-xs text-gray-100 uppercase bg-gray-700">
                             <tr>
                                 <th class="px-6 py-3">Artista</th>
@@ -135,8 +188,8 @@
             <div id="escuchadas-list" class="tab-content" style="display: none;">
                 <div class="bg-gray-800 p-4 rounded-lg mb-6">
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-                        <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
+                        <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         <select id="filter-e-estilo" multiple></select>
                         <select id="filter-e-pais" multiple></select>
                         <select id="filter-e-seguir" multiple></select>
@@ -146,7 +199,7 @@
                     </div>
                 </div>
                 <div class="overflow-x-auto bg-gray-800 rounded-lg">
-                    <table class="min-w-full text-sm text-left text-gray-300">
+                    <table class="min-w-full text-sm text-left text-gray-300 responsive-table">
                         <thead class="text-xs text-gray-100 uppercase bg-gray-700">
                             <tr>
                                 <th class="px-6 py-3">Artista</th>
@@ -368,28 +421,28 @@
 
             paginatedData.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
+                tr.className = 'bg-gray-800 border-b border-gray-700 md:border-b-0';
 
                 if (type === 'porEscuchar') {
                     const linksHtml = generateLinksHtml(row, 7, 14);
                     tr.innerHTML = `
-                        <td class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
-                        <td class="px-6 py-2">${row[2] || ''}</td>
-                        <td class="px-6 py-2">${row[3] || ''}</td>
-                        <td class="px-6 py-2">${row[4] || ''}</td>
-                        <td class="px-6 py-2">${row[5] || ''}</td>
-                        <td class="px-6 py-2">${row[6] || ''}</td>
-                        <td class="px-6 py-2">${linksHtml}</td>
+                        <td data-label="Artista" class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
+                        <td data-label="Disco" class="px-6 py-2">${row[2] || ''}</td>
+                        <td data-label="Estilo" class="px-6 py-2">${row[3] || ''}</td>
+                        <td data-label="País" class="px-6 py-2">${row[4] || ''}</td>
+                        <td data-label="Comentario" class="px-6 py-2">${row[5] || ''}</td>
+                        <td data-label="Ya Escuchada?" class="px-6 py-2">${row[6] || ''}</td>
+                        <td data-label="Links" class="px-6 py-2">${linksHtml}</td>
                     `;
                 } else {
                     const linksHtml = generateLinksHtml(row, 6, 13);
                     tr.innerHTML = `
-                        <td class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
-                        <td class="px-6 py-2">${row[2] || ''}</td>
-                        <td class="px-6 py-2">${row[3] || ''}</td>
-                        <td class="px-6 py-2">${row[4] || ''}</td>
-                        <td class="px-6 py-2">${row[5] || ''}</td>
-                        <td class="px-6 py-2">${linksHtml}</td>
+                        <td data-label="Artista" class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
+                        <td data-label="Estilo" class="px-6 py-2">${row[2] || ''}</td>
+                        <td data-label="País" class="px-6 py-2">${row[3] || ''}</td>
+                        <td data-label="Comentario" class="px-6 py-2">${row[4] || ''}</td>
+                        <td data-label="Seguir Escuchando?" class="px-6 py-2">${row[5] || ''}</td>
+                        <td data-label="Links" class="px-6 py-2">${linksHtml}</td>
                     `;
                 }
                 tableBody.appendChild(tr);
