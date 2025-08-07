@@ -12,6 +12,8 @@
     <!-- Choices.js para dropdowns con búsqueda y selección múltiple -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
     <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <!-- Chart.js para los gráficos de estadísticas -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         /* Estilos personalizados para la aplicación */
         body {
@@ -58,13 +60,16 @@
         .choices__list--dropdown {
             background-color: #f9fafb; /* gray-50 */
             border-color: #d1d5db; /* gray-300 */
+            width: max-content; /* Ancho dinámico */
+            min-width: 100%;
         }
         .choices__item--choice {
             color: #1f2937; /* gray-800 */
+            white-space: nowrap; /* Evitar salto de línea */
         }
         .choices__item--selectable.is-highlighted {
-            background-color: #6b7280; /* gray-500 */
-            color: white;
+            background-color: #bae6fd; /* Celeste (sky-200) */
+            color: #1f2937; /* Texto oscuro para contraste */
         }
         .choices__input {
              background-color: transparent;
@@ -157,6 +162,7 @@
             </button>
             <button onclick="showTab('por-escuchar-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Para Escuchar (Random)</button>
             <button onclick="showTab('escuchadas-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Escuchadas (Random)</button>
+            <button onclick="showTab('stats-tab')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Estadísticas</button>
         </nav>
 
         <!-- Contenido de las Pestañas -->
@@ -165,7 +171,7 @@
             <div id="por-escuchar-list" class="tab-content">
                 <div class="bg-gray-900 p-4 rounded-lg mb-6">
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                         <div class="flex flex-col">
                             <label for="filter-pe-artista" class="text-sm font-medium text-gray-400 mb-1">Artista</label>
                             <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-gray-500 focus:outline-none">
@@ -187,8 +193,15 @@
                             <select id="filter-pe-escuchada" multiple></select>
                         </div>
                     </div>
-                    <div class="flex items-center justify-end mt-4">
-                        <button onclick="shuffleList('porEscuchar')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
+                    <div class="flex flex-wrap items-end justify-between mt-4 gap-4">
+                        <div class="flex flex-col flex-grow min-w-[200px]">
+                            <label for="filter-pe-comentario" class="text-sm font-medium text-gray-400 mb-1">Comentario</label>
+                            <select id="filter-pe-comentario" multiple></select>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <button onclick="clearFilters('porEscuchar')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Limpiar Filtros</button>
+                            <button onclick="shuffleList('porEscuchar')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
+                        </div>
                     </div>
                 </div>
                 <div class="overflow-x-auto bg-gray-900 rounded-lg">
@@ -232,7 +245,8 @@
                             <select id="filter-e-seguir" multiple></select>
                         </div>
                     </div>
-                     <div class="flex items-center justify-end mt-4">
+                     <div class="flex items-center justify-end mt-4 gap-4">
+                        <button onclick="clearFilters('escuchadas')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Limpiar Filtros</button>
                         <button onclick="shuffleList('escuchadas')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
                     </div>
                 </div>
@@ -253,7 +267,7 @@
                 </div>
                  <div id="pagination-e" class="flex flex-wrap justify-center items-center mt-4 gap-2"></div>
             </div>
-
+            
             <!-- Pestaña 3: Para Escuchar - Random -->
             <div id="por-escuchar-random" class="tab-content text-center" style="display: none;">
                 <button onclick="showRandom('porEscuchar')" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors mb-8">¡Dame un artista para escuchar!</button>
@@ -267,6 +281,28 @@
                 <button onclick="showRandom('escuchadas')" class="bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors mb-8">¡Recuérdame un artista que ya escuché!</button>
                 <div id="random-card-escuchadas" class="bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto shadow-lg">
                     <p class="text-gray-400">Haz clic en el botón para obtener un recuerdo aleatorio.</p>
+                </div>
+            </div>
+
+            <!-- Pestaña 5: Estadísticas -->
+            <div id="stats-tab" class="tab-content" style="display: none;">
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                    <!-- Sección de Países -->
+                    <div class="bg-gray-900 p-6 rounded-lg">
+                        <h3 class="text-2xl font-bold mb-4 text-center">Artistas por País</h3>
+                        <div class="chart-container" style="position: relative; height:40vh; width:100%">
+                             <canvas id="country-chart"></canvas>
+                        </div>
+                        <div id="country-table-container" class="mt-6 max-h-80 overflow-y-auto"></div>
+                    </div>
+                    <!-- Sección de Estilos -->
+                    <div class="bg-gray-900 p-6 rounded-lg">
+                        <h3 class="text-2xl font-bold mb-4 text-center">Top 15 Estilos Musicales</h3>
+                        <div class="chart-container" style="position: relative; height:40vh; width:100%">
+                            <canvas id="style-chart"></canvas>
+                        </div>
+                        <div id="style-table-container" class="mt-6 max-h-80 overflow-y-auto"></div>
+                    </div>
                 </div>
             </div>
         </main>
@@ -292,6 +328,11 @@
         let escuchadasCurrentPage = 1;
         const ROWS_PER_PAGE = 10;
 
+        // Estadísticas
+        let countryStats, styleStats;
+        let chartsRendered = false;
+        let isClearingFilters = false;
+
         // Nombres de los servicios para los links
         const LINK_NAMES = ["Spotify", "Metal Archives", "RYM", "LastFM", "AOTY", "Music Map", "AllMusic", "Google"];
 
@@ -311,6 +352,7 @@
                 
                 updateTabCounts();
                 initializeFilters();
+                calculateStatistics();
                 renderTable('porEscuchar');
                 renderTable('escuchadas');
 
@@ -338,54 +380,74 @@
         }
 
         function initializeFilters() {
-            // Configuración común para Choices.js
-            const choicesConfig = (placeholder) => ({
-                removeItemButton: true,
-                placeholder: true,
-                placeholderValue: placeholder,
-                classNames: { containerOuter: 'choices' }
+            const choicesConfig = () => ({ 
+                removeItemButton: true, 
+                searchPlaceholderValue: 'Buscar...',
+                classNames: { containerOuter: 'choices' } 
             });
 
             // --- Filtros "Para Escuchar" ---
             const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
             const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const peEscuchadaOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
-
-            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig(''));
+            const peComentarios = [...new Set(porEscucharData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const peEscuchadaOpts = [...new Set(porEscucharData.map(row => row[6]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            
+            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig());
             choicesPE.estilo.setChoices(peEstilos, 'value', 'label', false);
             
-            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig(''));
+            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig());
             choicesPE.pais.setChoices(pePaises, 'value', 'label', false);
 
-            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig(''));
+            choicesPE.comentario = new Choices('#filter-pe-comentario', choicesConfig());
+            choicesPE.comentario.setChoices(peComentarios, 'value', 'label', false);
+
+            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig());
             choicesPE.escuchada.setChoices(peEscuchadaOpts, 'value', 'label', false);
             
-            // Event Listeners para filtros automáticos
             document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
             document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-estilo').addEventListener('change', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-pais').addEventListener('change', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-escuchada').addEventListener('change', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-estilo').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            document.getElementById('filter-pe-pais').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            document.getElementById('filter-pe-comentario').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            document.getElementById('filter-pe-escuchada').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
 
             // --- Filtros "Escuchadas" ---
             const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
             const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const eSeguirOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
-
-            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig(''));
+            const eSeguirOpts = [...new Set(escuchadasData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            
+            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig());
             choicesE.estilo.setChoices(eEstilos, 'value', 'label', false);
-
-            choicesE.pais = new Choices('#filter-e-pais', choicesConfig(''));
+            
+            choicesE.pais = new Choices('#filter-e-pais', choicesConfig());
             choicesE.pais.setChoices(ePaises, 'value', 'label', false);
-
-            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig(''));
+            
+            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig());
             choicesE.seguir.setChoices(eSeguirOpts, 'value', 'label', false);
             
-            // Event Listeners para filtros automáticos
             document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
-            document.getElementById('filter-e-estilo').addEventListener('change', () => applyFilters('escuchadas'));
-            document.getElementById('filter-e-pais').addEventListener('change', () => applyFilters('escuchadas'));
-            document.getElementById('filter-e-seguir').addEventListener('change', () => applyFilters('escuchadas'));
+            document.getElementById('filter-e-estilo').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            document.getElementById('filter-e-pais').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            document.getElementById('filter-e-seguir').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+        }
+
+        function clearFilters(type) {
+            isClearingFilters = true;
+            if (type === 'porEscuchar') {
+                document.getElementById('filter-pe-artista').value = '';
+                document.getElementById('filter-pe-disco').value = '';
+                choicesPE.estilo.removeActiveItems();
+                choicesPE.pais.removeActiveItems();
+                choicesPE.comentario.removeActiveItems();
+                choicesPE.escuchada.removeActiveItems();
+            } else { // escuchadas
+                document.getElementById('filter-e-artista').value = '';
+                choicesE.estilo.removeActiveItems();
+                choicesE.pais.removeActiveItems();
+                choicesE.seguir.removeActiveItems();
+            }
+            isClearingFilters = false;
+            applyFilters(type);
         }
 
         function applyFilters(type) {
@@ -394,15 +456,15 @@
                 const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
                 const estilos = choicesPE.estilo.getValue(true);
                 const paises = choicesPE.pais.getValue(true);
+                const comentarios = choicesPE.comentario.getValue(true);
                 const escuchadas = choicesPE.escuchada.getValue(true);
-
                 filteredPorEscuchar = porEscucharData.filter(row => {
-                    const matchArtista = (row[1] || '').toLowerCase().includes(artista);
-                    const matchDisco = (row[2] || '').toLowerCase().includes(disco);
-                    const matchEstilo = estilos.length === 0 || estilos.includes(row[3] || '');
-                    const matchPais = paises.length === 0 || paises.includes(row[4] || '');
-                    const matchEscuchada = escuchadas.length === 0 || escuchadas.includes(row[6] || '');
-                    return matchArtista && matchDisco && matchEstilo && matchPais && matchEscuchada;
+                    return (row[1] || '').toLowerCase().includes(artista) &&
+                           (row[2] || '').toLowerCase().includes(disco) &&
+                           (estilos.length === 0 || estilos.includes(row[3] || '')) &&
+                           (paises.length === 0 || paises.includes(row[4] || '')) &&
+                           (comentarios.length === 0 || comentarios.includes(row[5] || '')) &&
+                           (escuchadas.length === 0 || escuchadas.includes(row[6] || ''));
                 });
                 porEscucharCurrentPage = 1;
                 renderTable('porEscuchar');
@@ -411,13 +473,11 @@
                 const estilos = choicesE.estilo.getValue(true);
                 const paises = choicesE.pais.getValue(true);
                 const seguir = choicesE.seguir.getValue(true);
-
                 filteredEscuchadas = escuchadasData.filter(row => {
-                    const matchArtista = (row[1] || '').toLowerCase().includes(artista);
-                    const matchEstilo = estilos.length === 0 || estilos.includes(row[2] || '');
-                    const matchPais = paises.length === 0 || paises.includes(row[3] || '');
-                    const matchSeguir = seguir.length === 0 || seguir.includes(row[5] || '');
-                    return matchArtista && matchEstilo && matchPais && matchSeguir;
+                    return (row[1] || '').toLowerCase().includes(artista) &&
+                           (estilos.length === 0 || estilos.includes(row[2] || '')) &&
+                           (paises.length === 0 || paises.includes(row[3] || '')) &&
+                           (seguir.length === 0 || seguir.includes(row[5] || ''));
                 });
                 escuchadasCurrentPage = 1;
                 renderTable('escuchadas');
@@ -436,6 +496,12 @@
             document.getElementById(tabId).style.display = 'block';
             const activeButton = Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.getAttribute('onclick') === `showTab('${tabId}')`);
             if (activeButton) activeButton.classList.add('tab-active');
+            
+            if (tabId === 'stats-tab' && !chartsRendered) {
+                renderCountryChart();
+                renderStyleChart();
+                chartsRendered = true;
+            }
         }
 
         function renderTable(type) {
@@ -443,7 +509,6 @@
             const tableBody = document.getElementById(tableBodyId);
             const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
             const currentPage = type === 'porEscuchar' ? porEscucharCurrentPage : escuchadasCurrentPage;
-
             tableBody.innerHTML = ''; 
 
             if (!data || data.length === 0) {
@@ -453,16 +518,11 @@
                 return;
             }
             
-            const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
-            const endIndex = startIndex + ROWS_PER_PAGE;
-            const paginatedData = data.slice(startIndex, endIndex);
-
+            const paginatedData = data.slice((currentPage - 1) * ROWS_PER_PAGE, currentPage * ROWS_PER_PAGE);
             paginatedData.forEach(row => {
                 const tr = document.createElement('tr');
                 tr.className = 'bg-gray-900 border-b border-gray-800';
-
                 if (type === 'porEscuchar') {
-                    const linksHtml = generateLinksHtml(row, 7, 14);
                     tr.innerHTML = `
                         <td data-label="Artista" class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
                         <td data-label="Disco" class="px-6 py-2">${row[2] || ''}</td>
@@ -470,18 +530,15 @@
                         <td data-label="País" class="px-6 py-2">${row[4] || ''}</td>
                         <td data-label="Comentario" class="px-6 py-2">${row[5] || ''}</td>
                         <td data-label="Ya Escuchada?" class="px-6 py-2">${row[6] || ''}</td>
-                        <td data-label="Links" class="px-6 py-2">${linksHtml}</td>
-                    `;
+                        <td data-label="Links" class="px-6 py-2">${generateLinksHtml(row, 7, 14)}</td>`;
                 } else {
-                    const linksHtml = generateLinksHtml(row, 6, 13);
                     tr.innerHTML = `
                         <td data-label="Artista" class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
                         <td data-label="Estilo" class="px-6 py-2">${row[2] || ''}</td>
                         <td data-label="País" class="px-6 py-2">${row[3] || ''}</td>
                         <td data-label="Comentario" class="px-6 py-2">${row[4] || ''}</td>
                         <td data-label="Seguir Escuchando?" class="px-6 py-2">${row[5] || ''}</td>
-                        <td data-label="Links" class="px-6 py-2">${linksHtml}</td>
-                    `;
+                        <td data-label="Links" class="px-6 py-2">${generateLinksHtml(row, 6, 13)}</td>`;
                 }
                 tableBody.appendChild(tr);
             });
@@ -499,40 +556,30 @@
             if (totalPages <= 1) return;
             
             const btnClass = "pagination-button px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed";
-
-            let html = `<div class="flex items-center justify-center gap-2">`;
-            html += `<button onclick="changePage('${type}', 1)" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Inicio</button>`;
-            html += `<button onclick="changePage('${type}', ${currentPage - 1})" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-            html += `<span class="text-sm text-gray-400">Página</span>`;
-            html += `<input type="number" value="${currentPage}" onchange="goToPage('${type}', this.value, ${totalPages})" min="1" max="${totalPages}" class="w-16 bg-gray-700 text-center rounded-md p-2 focus:ring-2 focus:ring-gray-500 focus:outline-none">`;
-            html += `<span class="text-sm text-gray-400">de ${totalPages}</span>`;
-            html += `<button onclick="changePage('${type}', ${currentPage + 1})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>`;
-            html += `<button onclick="changePage('${type}', ${totalPages})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Final</button>`;
-            html += `</div>`;
-
-            container.innerHTML = html;
+            container.innerHTML = `<div class="flex items-center justify-center gap-2">
+                <button onclick="changePage('${type}', 1)" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Inicio</button>
+                <button onclick="changePage('${type}', ${currentPage - 1})" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>
+                <span class="text-sm text-gray-400">Página</span>
+                <input type="number" value="${currentPage}" onchange="goToPage('${type}', this.value, ${totalPages})" min="1" max="${totalPages}" class="w-16 bg-gray-700 text-center rounded-md p-2 focus:ring-2 focus:ring-gray-500 focus:outline-none">
+                <span class="text-sm text-gray-400">de ${totalPages}</span>
+                <button onclick="changePage('${type}', ${currentPage + 1})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>
+                <button onclick="changePage('${type}', ${totalPages})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Final</button>
+            </div>`;
         }
 
         function changePage(type, page) {
             const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
             const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
             const newPage = Math.max(1, Math.min(page, totalPages));
-
-            if (type === 'porEscuchar') {
-                porEscucharCurrentPage = newPage;
-            } else {
-                escuchadasCurrentPage = newPage;
-            }
+            if (type === 'porEscuchar') porEscucharCurrentPage = newPage;
+            else escuchadasCurrentPage = newPage;
             renderTable(type);
         }
         
         function goToPage(type, pageStr, totalPages) {
             let page = parseInt(pageStr, 10);
-            if (isNaN(page) || page < 1) {
-                page = 1;
-            } else if (page > totalPages) {
-                page = totalPages;
-            }
+            if (isNaN(page) || page < 1) page = 1;
+            else if (page > totalPages) page = totalPages;
             changePage(type, page);
         }
 
@@ -544,38 +591,115 @@
                 if (url && url.startsWith('http')) {
                     let finalUrl = url;
                     let target = '_blank';
-                    
-                    // Specific logic for Spotify to open the desktop app
                     if (name === "Spotify" && url.includes('open.spotify.com')) {
                         finalUrl = url.replace('https://open.spotify.com/', 'spotify:');
-                        target = '_self'; // URI schemes don't need a new tab
+                        target = '_self';
                     }
-
                     linksHtml += `<a href="${finalUrl}" target="${target}" rel="noopener noreferrer" class="text-xs bg-gray-700 hover:bg-gray-600 text-white font-semibold py-1 px-2 rounded-full transition-colors">${name}</a>`;
                 }
             }
-            linksHtml += '</div>';
-            return linksHtml;
+            return linksHtml + '</div>';
         }
         
         function shuffleList(type) {
-            if (type === 'porEscuchar') {
-                for (let i = filteredPorEscuchar.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [filteredPorEscuchar[i], filteredPorEscuchar[j]] = [filteredPorEscuchar[j], filteredPorEscuchar[i]];
-                }
-                porEscucharCurrentPage = 1;
-            } else {
-                 for (let i = filteredEscuchadas.length - 1; i > 0; i--) {
-                    const j = Math.floor(Math.random() * (i + 1));
-                    [filteredEscuchadas[i], filteredEscuchadas[j]] = [filteredEscuchadas[j], filteredEscuchadas[i]];
-                }
-                escuchadasCurrentPage = 1;
+            const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
+            for (let i = data.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [data[i], data[j]] = [data[j], data[i]];
             }
+            if (type === 'porEscuchar') porEscucharCurrentPage = 1;
+            else escuchadasCurrentPage = 1;
             renderTable(type);
         }
 
-        // --- LÓGICA RANDOM (TABS 3 Y 4) ---
+        // --- LÓGICA DE ESTADÍSTICAS ---
+        function calculateStatistics() {
+            const allData = [
+                ...porEscucharData.map(row => ({ style: row[3], country: row[4] })),
+                ...escuchadasData.map(row => ({ style: row[2], country: row[3] }))
+            ];
+
+            const countItems = (key) => {
+                const counts = allData.reduce((acc, item) => {
+                    const value = item[key];
+                    if (value) {
+                        acc[value] = (acc[value] || 0) + 1;
+                    }
+                    return acc;
+                }, {});
+                return Object.entries(counts).map(([name, count]) => ({ name, count })).sort((a, b) => b.count - a.count);
+            };
+
+            countryStats = countItems('country');
+            styleStats = countItems('style');
+        }
+
+        function renderStatsTable(containerId, headers, data) {
+            const container = document.getElementById(containerId);
+            let table = `<table class="min-w-full text-sm text-left text-gray-300">
+                <thead class="text-xs text-gray-100 uppercase bg-gray-800">
+                    <tr>${headers.map(h => `<th class="px-6 py-3">${h}</th>`).join('')}</tr>
+                </thead><tbody>`;
+            data.forEach(item => {
+                table += `<tr class="bg-gray-900 border-b border-gray-800">
+                    <td class="px-6 py-2">${item.name}</td>
+                    <td class="px-6 py-2">${item.count}</td>
+                </tr>`;
+            });
+            table += `</tbody></table>`;
+            container.innerHTML = table;
+        }
+
+        function renderCountryChart() {
+            const ctx = document.getElementById('country-chart').getContext('2d');
+            const top10Countries = countryStats.slice(0, 10);
+            new Chart(ctx, {
+                type: 'pie',
+                data: {
+                    labels: top10Countries.map(c => c.name),
+                    datasets: [{
+                        label: 'Artistas por País',
+                        data: top10Countries.map(c => c.count),
+                        backgroundColor: ['#ef4444', '#f97316', '#eab308', '#84cc16', '#22c55e', '#10b981', '#06b6d4', '#3b82f6', '#8b5cf6', '#d946ef'],
+                        borderColor: '#111827',
+                        borderWidth: 2
+                    }]
+                },
+                options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { labels: { color: '#d1d5db' } } } }
+            });
+            renderStatsTable('country-table-container', ['País', 'Cantidad'], countryStats);
+        }
+
+        function renderStyleChart() {
+            const ctx = document.getElementById('style-chart').getContext('2d');
+            const top15Styles = styleStats.slice(0, 15);
+            new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: top15Styles.map(s => s.name),
+                    datasets: [{
+                        label: 'Cantidad de Artistas',
+                        data: top15Styles.map(s => s.count),
+                        backgroundColor: '#4b5563',
+                        borderColor: '#6b7280',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: { legend: { display: false } },
+                    scales: {
+                        y: { ticks: { color: '#d1d5db' }, grid: { color: '#374151' } },
+                        x: { ticks: { color: '#d1d5db' }, grid: { color: '#374151' } }
+                    }
+                }
+            });
+            renderStatsTable('style-table-container', ['Estilo', 'Cantidad'], styleStats);
+        }
+
+        // --- LÓGICA RANDOM ---
         function showRandom(type) {
             const data = type === 'porEscuchar' ? porEscucharData : escuchadasData;
             const cardContainerId = type === 'porEscuchar' ? 'random-card-por-escuchar' : 'random-card-escuchadas';
@@ -588,7 +712,6 @@
 
             const randomIndex = Math.floor(Math.random() * data.length);
             const randomRow = data[randomIndex];
-            
             cardContainer.innerHTML = ''; 
             
             let cardHtml = '';
@@ -606,8 +729,7 @@
                     <div class="mt-6">
                         <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
                         ${linksHtml}
-                    </div>
-                `;
+                    </div>`;
             } else {
                 const linksHtml = generateLinksHtml(randomRow, 6, 13);
                 cardHtml = `
@@ -621,8 +743,7 @@
                     <div class="mt-6">
                         <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
                         ${linksHtml}
-                    </div>
-                `;
+                    </div>`;
             }
             cardContainer.innerHTML = cardHtml;
         }
