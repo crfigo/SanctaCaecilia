@@ -1,0 +1,481 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sancta Caecilia</title>
+    <!-- Tailwind CSS para un diseño moderno y responsivo -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- PapaParse para procesar los archivos CSV de Google Sheets de forma segura -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <style>
+        /* Estilos personalizados para la aplicación */
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        /* Estilo para la pestaña activa */
+        .tab-active {
+            background-color: #3b82f6; /* blue-500 */
+            color: white;
+        }
+        .pagination-button {
+            min-width: 40px;
+        }
+        .pagination-active {
+            background-color: #3b82f6;
+            border-color: #3b82f6;
+            color: white;
+        }
+        /* Ocultar las flechas en los inputs de tipo número */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+    </style>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body class="bg-gray-900 text-gray-200">
+
+    <div id="loading-indicator" class="fixed inset-0 bg-gray-900 bg-opacity-80 flex items-center justify-center z-50">
+        <div class="text-center">
+            <svg class="animate-spin h-10 w-10 text-blue-500 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-lg">Cargando datos desde Google Sheets...</p>
+        </div>
+    </div>
+
+    <div class="container mx-auto p-4 md:p-8">
+        <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold text-white">Sancta Caecilia</h1>
+            <p class="text-gray-400 mt-2">by LFR</p>
+        </header>
+
+        <!-- Navegación de Pestañas -->
+        <nav class="flex flex-wrap justify-center gap-2 mb-8">
+            <button onclick="showTab('por-escuchar-list')" class="tab-button tab-active py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Para Escuchar (Lista)</button>
+            <button onclick="showTab('escuchadas-list')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Escuchadas (Lista)</button>
+            <button onclick="showTab('por-escuchar-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Para Escuchar (Random)</button>
+            <button onclick="showTab('escuchadas-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Escuchadas (Random)</button>
+        </nav>
+
+        <!-- Contenido de las Pestañas -->
+        <main>
+            <!-- Pestaña 1: Para Escuchar - Lista -->
+            <div id="por-escuchar-list" class="tab-content">
+                <div class="bg-gray-800 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Filtros</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                        <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="filter-pe-estilo" list="datalist-pe-estilo" placeholder="Estilo..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <datalist id="datalist-pe-estilo"></datalist>
+                        <input type="text" id="filter-pe-pais" list="datalist-pe-pais" placeholder="País..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <datalist id="datalist-pe-pais"></datalist>
+                        <select id="filter-pe-escuchada" class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Ya Escuchada? (Todos)</option>
+                            <option value="SI">Sí</option>
+                            <option value="NO">No</option>
+                        </select>
+                    </div>
+                    <div class="flex items-center justify-between mt-4">
+                        <button onclick="applyFilters('porEscuchar')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Aplicar Filtros</button>
+                        <button onclick="shuffleList('porEscuchar')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto bg-gray-800 rounded-lg">
+                    <table class="min-w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-100 uppercase bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3">Artista</th>
+                                <th class="px-6 py-3">Disco</th>
+                                <th class="px-6 py-3">Estilo</th>
+                                <th class="px-6 py-3">País</th>
+                                <th class="px-6 py-3">Comentario</th>
+                                <th class="px-6 py-3">Ya Escuchada?</th>
+                                <th class="px-6 py-3">Links</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-por-escuchar"></tbody>
+                    </table>
+                </div>
+                <div id="pagination-pe" class="flex flex-wrap justify-center items-center mt-4 gap-2"></div>
+            </div>
+
+            <!-- Pestaña 2: Escuchadas - Lista -->
+            <div id="escuchadas-list" class="tab-content" style="display: none;">
+                <div class="bg-gray-800 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Filtros</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                        <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <input type="text" id="filter-e-estilo" list="datalist-e-estilo" placeholder="Estilo..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <datalist id="datalist-e-estilo"></datalist>
+                        <input type="text" id="filter-e-pais" list="datalist-e-pais" placeholder="País..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        <datalist id="datalist-e-pais"></datalist>
+                        <select id="filter-e-seguir" class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                            <option value="">Seguir Escuchando? (Todos)</option>
+                            <option value="SI">Sí</option>
+                            <option value="NO">No</option>
+                        </select>
+                    </div>
+                     <div class="flex items-center justify-between mt-4">
+                        <button onclick="applyFilters('escuchadas')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Aplicar Filtros</button>
+                        <button onclick="shuffleList('escuchadas')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto bg-gray-800 rounded-lg">
+                    <table class="min-w-full text-sm text-left text-gray-300">
+                        <thead class="text-xs text-gray-100 uppercase bg-gray-700">
+                            <tr>
+                                <th class="px-6 py-3">Artista</th>
+                                <th class="px-6 py-3">Estilo</th>
+                                <th class="px-6 py-3">País</th>
+                                <th class="px-6 py-3">Comentario</th>
+                                <th class="px-6 py-3">Seguir Escuchando?</th>
+                                <th class="px-6 py-3">Links</th>
+                            </tr>
+                        </thead>
+                        <tbody id="table-body-escuchadas"></tbody>
+                    </table>
+                </div>
+                 <div id="pagination-e" class="flex flex-wrap justify-center items-center mt-4 gap-2"></div>
+            </div>
+
+            <!-- Pestaña 3: Para Escuchar - Random -->
+            <div id="por-escuchar-random" class="tab-content text-center" style="display: none;">
+                <button onclick="showRandom('porEscuchar')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors mb-8">¡Dame un artista para escuchar!</button>
+                <div id="random-card-por-escuchar" class="bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto shadow-lg">
+                     <p class="text-gray-400">Haz clic en el botón para obtener una recomendación aleatoria.</p>
+                </div>
+            </div>
+
+            <!-- Pestaña 4: Escuchadas - Random -->
+            <div id="escuchadas-random" class="tab-content text-center" style="display: none;">
+                <button onclick="showRandom('escuchadas')" class="bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-6 rounded-lg text-lg transition-colors mb-8">¡Recuérdame un artista que ya escuché!</button>
+                <div id="random-card-escuchadas" class="bg-gray-800 rounded-lg p-6 max-w-2xl mx-auto shadow-lg">
+                    <p class="text-gray-400">Haz clic en el botón para obtener un recuerdo aleatorio.</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script>
+        // URLs de los Google Sheets publicados como CSV
+        const URL_POR_ESCUCHAR = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSGpNMHvwKugDUe7EvNvQVIBEBg7RdgHEpcWlUuOQlE5oBF0b61Ql-HN35dWfewWlR7gftloGshufJ-/pub?gid=0&single=true&output=csv';
+        const URL_ESCUCHADAS = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vSGpNMHvwKugDUe7EvNvQVIBEBg7RdgHEpcWlUuOQlE5oBF0b61Ql-HN35dWfewWlR7gftloGshufJ-/pub?gid=832295915&single=true&output=csv';
+
+        // Almacenamiento de datos
+        let porEscucharData = [];
+        let escuchadasData = [];
+        let filteredPorEscuchar = [];
+        let filteredEscuchadas = [];
+
+        // Paginación
+        let porEscucharCurrentPage = 1;
+        let escuchadasCurrentPage = 1;
+        const ROWS_PER_PAGE = 10;
+
+        // Nombres de los servicios para los links
+        const LINK_NAMES = ["Spotify", "Metal Archives", "RYM", "LastFM", "AOTY", "Music Map", "AllMusic", "Google"];
+
+        // --- INICIALIZACIÓN ---
+        window.onload = async () => {
+            try {
+                const [peData, eData] = await Promise.all([
+                    fetchAndParseCSV(URL_POR_ESCUCHAR),
+                    fetchAndParseCSV(URL_ESCUCHADAS)
+                ]);
+                
+                porEscucharData = peData.slice(5).filter(row => row[1]); // Filtrar filas sin artista
+                escuchadasData = eData.slice(5).filter(row => row[1]); // Filtrar filas sin artista
+                
+                filteredPorEscuchar = [...porEscucharData];
+                filteredEscuchadas = [...escuchadasData];
+                
+                populateFilterDatalists();
+                renderTable('porEscuchar');
+                renderTable('escuchadas');
+
+            } catch (error) {
+                console.error("Error al cargar los datos:", error);
+                alert("Hubo un error al cargar los datos desde Google Sheets. Revisa la consola para más detalles.");
+            } finally {
+                document.getElementById('loading-indicator').style.display = 'none';
+            }
+        };
+
+        // --- LÓGICA DE DATOS ---
+        async function fetchAndParseCSV(url) {
+            return new Promise((resolve, reject) => {
+                Papa.parse(url, {
+                    download: true,
+                    header: false,
+                    complete: (results) => {
+                        const cleanData = results.data.filter(row => row.some(cell => cell && cell.trim() !== ''));
+                        resolve(cleanData);
+                    },
+                    error: (error) => reject(error)
+                });
+            });
+        }
+
+        function populateFilterDatalists() {
+            const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort();
+            const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort();
+            const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort();
+            const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort();
+
+            populateDatalistWithOptions('datalist-pe-estilo', peEstilos);
+            populateDatalistWithOptions('datalist-pe-pais', pePaises);
+            populateDatalistWithOptions('datalist-e-estilo', eEstilos);
+            populateDatalistWithOptions('datalist-e-pais', ePaises);
+        }
+
+        function populateDatalistWithOptions(datalistId, options) {
+            const datalist = document.getElementById(datalistId);
+            datalist.innerHTML = '';
+            options.forEach(option => {
+                datalist.innerHTML += `<option value="${option}"></option>`;
+            });
+        }
+
+        // --- LÓGICA DE LA INTERFAZ (UI) ---
+        function showTab(tabId) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
+            document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('tab-active'));
+            document.getElementById(tabId).style.display = 'block';
+            const activeButton = Array.from(document.querySelectorAll('.tab-button')).find(btn => btn.getAttribute('onclick') === `showTab('${tabId}')`);
+            if (activeButton) activeButton.classList.add('tab-active');
+        }
+
+        // --- LÓGICA DE LAS LISTAS (TABS 1 Y 2) ---
+        function renderTable(type) {
+            const tableBodyId = type === 'porEscuchar' ? 'table-body-por-escuchar' : 'table-body-escuchadas';
+            const tableBody = document.getElementById(tableBodyId);
+            const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
+            const currentPage = type === 'porEscuchar' ? porEscucharCurrentPage : escuchadasCurrentPage;
+
+            tableBody.innerHTML = ''; 
+
+            if (!data || data.length === 0) {
+                const colSpan = type === 'porEscuchar' ? 7 : 6;
+                tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-4">No se encontraron resultados.</td></tr>`;
+                renderPaginationControls(type);
+                return;
+            }
+            
+            const startIndex = (currentPage - 1) * ROWS_PER_PAGE;
+            const endIndex = startIndex + ROWS_PER_PAGE;
+            const paginatedData = data.slice(startIndex, endIndex);
+
+            paginatedData.forEach(row => {
+                const tr = document.createElement('tr');
+                tr.className = 'bg-gray-800 border-b border-gray-700 hover:bg-gray-600';
+
+                if (type === 'porEscuchar') {
+                    const linksHtml = generateLinksHtml(row, 7, 14);
+                    tr.innerHTML = `
+                        <td class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
+                        <td class="px-6 py-2">${row[2] || ''}</td>
+                        <td class="px-6 py-2">${row[3] || ''}</td>
+                        <td class="px-6 py-2">${row[4] || ''}</td>
+                        <td class="px-6 py-2">${row[5] || ''}</td>
+                        <td class="px-6 py-2">${row[6] || ''}</td>
+                        <td class="px-6 py-2">${linksHtml}</td>
+                    `;
+                } else {
+                    const linksHtml = generateLinksHtml(row, 6, 13);
+                    tr.innerHTML = `
+                        <td class="px-6 py-2 font-medium text-white whitespace-nowrap">${row[1] || ''}</td>
+                        <td class="px-6 py-2">${row[2] || ''}</td>
+                        <td class="px-6 py-2">${row[3] || ''}</td>
+                        <td class="px-6 py-2">${row[4] || ''}</td>
+                        <td class="px-6 py-2">${row[5] || ''}</td>
+                        <td class="px-6 py-2">${linksHtml}</td>
+                    `;
+                }
+                tableBody.appendChild(tr);
+            });
+            renderPaginationControls(type);
+        }
+        
+        function renderPaginationControls(type) {
+            const containerId = type === 'porEscuchar' ? 'pagination-pe' : 'pagination-e';
+            const container = document.getElementById(containerId);
+            const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
+            let currentPage = type === 'porEscuchar' ? porEscucharCurrentPage : escuchadasCurrentPage;
+            const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
+
+            container.innerHTML = '';
+            if (totalPages <= 1) return;
+            
+            const btnClass = "pagination-button px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed";
+
+            let html = `<div class="flex items-center justify-center gap-2">`;
+            // Botones de Inicio y Anterior
+            html += `<button onclick="changePage('${type}', 1)" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Inicio</button>`;
+            html += `<button onclick="changePage('${type}', ${currentPage - 1})" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
+
+            // Input para elegir página
+            html += `<span class="text-sm text-gray-400">Página</span>`;
+            html += `<input type="number" value="${currentPage}" onchange="goToPage('${type}', this.value, ${totalPages})" min="1" max="${totalPages}" class="w-16 bg-gray-600 text-center rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">`;
+            html += `<span class="text-sm text-gray-400">de ${totalPages}</span>`;
+
+            // Botones de Siguiente y Final
+            html += `<button onclick="changePage('${type}', ${currentPage + 1})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>`;
+            html += `<button onclick="changePage('${type}', ${totalPages})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Final</button>`;
+            html += `</div>`;
+
+            container.innerHTML = html;
+        }
+
+        function changePage(type, page) {
+            const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
+            const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
+            
+            // Validar que la página esté en el rango correcto
+            const newPage = Math.max(1, Math.min(page, totalPages));
+
+            if (type === 'porEscuchar') {
+                porEscucharCurrentPage = newPage;
+            } else {
+                escuchadasCurrentPage = newPage;
+            }
+            renderTable(type);
+        }
+        
+        function goToPage(type, pageStr, totalPages) {
+            let page = parseInt(pageStr, 10);
+            if (isNaN(page) || page < 1) {
+                page = 1;
+            } else if (page > totalPages) {
+                page = totalPages;
+            }
+            changePage(type, page);
+        }
+
+        function generateLinksHtml(row, startIdx, endIdx) {
+            let linksHtml = '<div class="flex flex-wrap gap-2">';
+            for (let i = startIdx; i <= endIdx; i++) {
+                const url = row[i];
+                const name = LINK_NAMES[i - startIdx];
+                if (url && url.startsWith('http')) {
+                    linksHtml += `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-800 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-full transition-colors">${name}</a>`;
+                }
+            }
+            linksHtml += '</div>';
+            return linksHtml;
+        }
+
+        function applyFilters(type) {
+            if (type === 'porEscuchar') {
+                const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
+                const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
+                const estilo = document.getElementById('filter-pe-estilo').value.toLowerCase();
+                const pais = document.getElementById('filter-pe-pais').value.toLowerCase();
+                const escuchada = document.getElementById('filter-pe-escuchada').value;
+
+                filteredPorEscuchar = porEscucharData.filter(row => {
+                    return (row[1] || '').toLowerCase().includes(artista) &&
+                           (row[2] || '').toLowerCase().includes(disco) &&
+                           (row[3] || '').toLowerCase().includes(estilo) &&
+                           (row[4] || '').toLowerCase().includes(pais) &&
+                           (escuchada === '' || (row[6] || '') === escuchada);
+                });
+                porEscucharCurrentPage = 1;
+                renderTable('porEscuchar');
+            } else {
+                const artista = document.getElementById('filter-e-artista').value.toLowerCase();
+                const estilo = document.getElementById('filter-e-estilo').value.toLowerCase();
+                const pais = document.getElementById('filter-e-pais').value.toLowerCase();
+                const seguir = document.getElementById('filter-e-seguir').value;
+
+                filteredEscuchadas = escuchadasData.filter(row => {
+                    return (row[1] || '').toLowerCase().includes(artista) &&
+                           (row[2] || '').toLowerCase().includes(estilo) &&
+                           (row[3] || '').toLowerCase().includes(pais) &&
+                           (seguir === '' || (row[5] || '') === seguir);
+                });
+                escuchadasCurrentPage = 1;
+                renderTable('escuchadas');
+            }
+        }
+        
+        function shuffleList(type) {
+            if (type === 'porEscuchar') {
+                for (let i = filteredPorEscuchar.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filteredPorEscuchar[i], filteredPorEscuchar[j]] = [filteredPorEscuchar[j], filteredPorEscuchar[i]];
+                }
+                porEscucharCurrentPage = 1;
+            } else {
+                 for (let i = filteredEscuchadas.length - 1; i > 0; i--) {
+                    const j = Math.floor(Math.random() * (i + 1));
+                    [filteredEscuchadas[i], filteredEscuchadas[j]] = [filteredEscuchadas[j], filteredEscuchadas[i]];
+                }
+                escuchadasCurrentPage = 1;
+            }
+            renderTable(type);
+        }
+
+        // --- LÓGICA RANDOM (TABS 3 Y 4) ---
+        function showRandom(type) {
+            const data = type === 'porEscuchar' ? porEscucharData : escuchadasData;
+            const cardContainerId = type === 'porEscuchar' ? 'random-card-por-escuchar' : 'random-card-escuchadas';
+            const cardContainer = document.getElementById(cardContainerId);
+
+            if (!data || data.length === 0) {
+                cardContainer.innerHTML = '<p class="text-red-400">No hay datos disponibles para mostrar.</p>';
+                return;
+            }
+
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const randomRow = data[randomIndex];
+            
+            cardContainer.innerHTML = ''; 
+            
+            let cardHtml = '';
+            if (type === 'porEscuchar') {
+                const linksHtml = generateLinksHtml(randomRow, 7, 14);
+                cardHtml = `
+                    <h2 class="text-3xl font-bold text-blue-400 mb-2">${randomRow[1] || 'Sin Artista'}</h2>
+                    <p class="text-xl text-white mb-4">${randomRow[2] || 'Sin Disco'}</p>
+                    <div class="text-left space-y-2">
+                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Estilo:</strong> ${randomRow[3] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">País:</strong> ${randomRow[4] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Comentario:</strong> ${randomRow[5] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Escuchada?:</strong> ${randomRow[6] || 'N/A'}</p>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
+                        ${linksHtml}
+                    </div>
+                `;
+            } else {
+                const linksHtml = generateLinksHtml(randomRow, 6, 13);
+                cardHtml = `
+                    <h2 class="text-3xl font-bold text-blue-400 mb-2">${randomRow[1] || 'Sin Artista'}</h2>
+                    <div class="text-left space-y-2">
+                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Estilo:</strong> ${randomRow[2] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">País:</strong> ${randomRow[3] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Comentario:</strong> ${randomRow[4] || 'N/A'}</p>
+                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Seguir Escuchando?:</strong> ${randomRow[5] || 'N/A'}</p>
+                    </div>
+                    <div class="mt-6">
+                        <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
+                        ${linksHtml}
+                    </div>
+                `;
+            }
+            cardContainer.innerHTML = cardHtml;
+        }
+    </script>
+</body>
+</html>
