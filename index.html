@@ -8,6 +8,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para procesar los archivos CSV de Google Sheets de forma segura -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
+    <!-- Choices.js para dropdowns con búsqueda y selección múltiple -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
     <style>
         /* Estilos personalizados para la aplicación */
         body {
@@ -21,11 +24,6 @@
         .pagination-button {
             min-width: 40px;
         }
-        .pagination-active {
-            background-color: #3b82f6;
-            border-color: #3b82f6;
-            color: white;
-        }
         /* Ocultar las flechas en los inputs de tipo número */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { 
@@ -34,6 +32,33 @@
         }
         input[type=number] {
           -moz-appearance: textfield;
+        }
+        /* Estilos para Choices.js en tema oscuro */
+        .choices {
+            background-color: #4a5568; /* gray-700 */
+            border-color: #718096; /* gray-600 */
+        }
+        .choices__inner {
+            background-color: #4a5568; /* gray-700 */
+            border-color: #718096; /* gray-600 */
+            color: #e2e8f0; /* gray-300 */
+        }
+        .choices__list--dropdown {
+            background-color: #2d3748; /* gray-800 */
+            border-color: #718096; /* gray-600 */
+        }
+        .choices__item--choice {
+            color: #e2e8f0; /* gray-300 */
+        }
+        .choices__item--selectable.is-highlighted {
+            background-color: #3b82f6; /* blue-500 */
+        }
+        .choices__input {
+             background-color: #4a5568; /* gray-700 */
+             color: #e2e8f0; /* gray-300 */
+        }
+        .choices__item--selected {
+            background-color: #3b82f6; /* blue-500 */
         }
     </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -60,8 +85,12 @@
 
         <!-- Navegación de Pestañas -->
         <nav class="flex flex-wrap justify-center gap-2 mb-8">
-            <button onclick="showTab('por-escuchar-list')" class="tab-button tab-active py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Para Escuchar (Lista)</button>
-            <button onclick="showTab('escuchadas-list')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Escuchadas (Lista)</button>
+            <button onclick="showTab('por-escuchar-list')" class="tab-button tab-active py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200 flex items-center">
+                Para Escuchar (Lista) <span id="count-pe" class="ml-2 bg-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+            </button>
+            <button onclick="showTab('escuchadas-list')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200 flex items-center">
+                Escuchadas (Lista) <span id="count-e" class="ml-2 bg-blue-600 text-xs font-semibold px-2 py-0.5 rounded-full">0</span>
+            </button>
             <button onclick="showTab('por-escuchar-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Para Escuchar (Random)</button>
             <button onclick="showTab('escuchadas-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-700 hover:bg-blue-600 transition-colors duration-200">Escuchadas (Random)</button>
         </nav>
@@ -75,18 +104,11 @@
                     <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4">
                         <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
                         <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <input type="text" id="filter-pe-estilo" list="datalist-pe-estilo" placeholder="Estilo..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <datalist id="datalist-pe-estilo"></datalist>
-                        <input type="text" id="filter-pe-pais" list="datalist-pe-pais" placeholder="País..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <datalist id="datalist-pe-pais"></datalist>
-                        <select id="filter-pe-escuchada" class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="">Ya Escuchada? (Todos)</option>
-                            <option value="SI">Sí</option>
-                            <option value="NO">No</option>
-                        </select>
+                        <select id="filter-pe-estilo" multiple></select>
+                        <select id="filter-pe-pais" multiple></select>
+                        <select id="filter-pe-escuchada" multiple></select>
                     </div>
-                    <div class="flex items-center justify-between mt-4">
-                        <button onclick="applyFilters('porEscuchar')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Aplicar Filtros</button>
+                    <div class="flex items-center justify-end mt-4">
                         <button onclick="shuffleList('porEscuchar')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
                     </div>
                 </div>
@@ -115,18 +137,11 @@
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
                         <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <input type="text" id="filter-e-estilo" list="datalist-e-estilo" placeholder="Estilo..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <datalist id="datalist-e-estilo"></datalist>
-                        <input type="text" id="filter-e-pais" list="datalist-e-pais" placeholder="País..." class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <datalist id="datalist-e-pais"></datalist>
-                        <select id="filter-e-seguir" class="bg-gray-700 border border-gray-600 rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                            <option value="">Seguir Escuchando? (Todos)</option>
-                            <option value="SI">Sí</option>
-                            <option value="NO">No</option>
-                        </select>
+                        <select id="filter-e-estilo" multiple></select>
+                        <select id="filter-e-pais" multiple></select>
+                        <select id="filter-e-seguir" multiple></select>
                     </div>
-                     <div class="flex items-center justify-between mt-4">
-                        <button onclick="applyFilters('escuchadas')" class="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Aplicar Filtros</button>
+                     <div class="flex items-center justify-end mt-4">
                         <button onclick="shuffleList('escuchadas')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
                     </div>
                 </div>
@@ -176,6 +191,10 @@
         let escuchadasData = [];
         let filteredPorEscuchar = [];
         let filteredEscuchadas = [];
+        
+        // Instancias de Choices.js
+        let choicesPE = {};
+        let choicesE = {};
 
         // Paginación
         let porEscucharCurrentPage = 1;
@@ -193,13 +212,14 @@
                     fetchAndParseCSV(URL_ESCUCHADAS)
                 ]);
                 
-                porEscucharData = peData.slice(5).filter(row => row[1]); // Filtrar filas sin artista
-                escuchadasData = eData.slice(5).filter(row => row[1]); // Filtrar filas sin artista
+                porEscucharData = peData.slice(5).filter(row => row[1]);
+                escuchadasData = eData.slice(5).filter(row => row[1]);
                 
                 filteredPorEscuchar = [...porEscucharData];
                 filteredEscuchadas = [...escuchadasData];
                 
-                populateFilterDatalists();
+                updateTabCounts();
+                initializeFilters();
                 renderTable('porEscuchar');
                 renderTable('escuchadas');
 
@@ -211,7 +231,7 @@
             }
         };
 
-        // --- LÓGICA DE DATOS ---
+        // --- LÓGICA DE DATOS Y FILTROS ---
         async function fetchAndParseCSV(url) {
             return new Promise((resolve, reject) => {
                 Papa.parse(url, {
@@ -226,27 +246,99 @@
             });
         }
 
-        function populateFilterDatalists() {
-            const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort();
-            const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort();
-            const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort();
-            const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort();
+        function initializeFilters() {
+            // Configuración común para Choices.js
+            const choicesConfig = (placeholder) => ({
+                removeItemButton: true,
+                placeholder: true,
+                placeholderValue: placeholder,
+                classNames: { containerOuter: 'choices' }
+            });
 
-            populateDatalistWithOptions('datalist-pe-estilo', peEstilos);
-            populateDatalistWithOptions('datalist-pe-pais', pePaises);
-            populateDatalistWithOptions('datalist-e-estilo', eEstilos);
-            populateDatalistWithOptions('datalist-e-pais', ePaises);
+            // --- Filtros "Para Escuchar" ---
+            const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const peEscuchadaOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
+
+            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig('Estilo(s)...'));
+            choicesPE.estilo.setChoices(peEstilos, 'value', 'label', false);
+            
+            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig('País(es)...'));
+            choicesPE.pais.setChoices(pePaises, 'value', 'label', false);
+
+            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig('Ya Escuchada?'));
+            choicesPE.escuchada.setChoices(peEscuchadaOpts, 'value', 'label', false);
+            
+            // Event Listeners para filtros automáticos
+            document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-estilo').addEventListener('change', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-pais').addEventListener('change', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-escuchada').addEventListener('change', () => applyFilters('porEscuchar'));
+
+            // --- Filtros "Escuchadas" ---
+            const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const eSeguirOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
+
+            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig('Estilo(s)...'));
+            choicesE.estilo.setChoices(eEstilos, 'value', 'label', false);
+
+            choicesE.pais = new Choices('#filter-e-pais', choicesConfig('País(es)...'));
+            choicesE.pais.setChoices(ePaises, 'value', 'label', false);
+
+            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig('Seguir Escuchando?'));
+            choicesE.seguir.setChoices(eSeguirOpts, 'value', 'label', false);
+            
+            // Event Listeners para filtros automáticos
+            document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
+            document.getElementById('filter-e-estilo').addEventListener('change', () => applyFilters('escuchadas'));
+            document.getElementById('filter-e-pais').addEventListener('change', () => applyFilters('escuchadas'));
+            document.getElementById('filter-e-seguir').addEventListener('change', () => applyFilters('escuchadas'));
         }
 
-        function populateDatalistWithOptions(datalistId, options) {
-            const datalist = document.getElementById(datalistId);
-            datalist.innerHTML = '';
-            options.forEach(option => {
-                datalist.innerHTML += `<option value="${option}"></option>`;
-            });
+        function applyFilters(type) {
+            if (type === 'porEscuchar') {
+                const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
+                const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
+                const estilos = choicesPE.estilo.getValue(true);
+                const paises = choicesPE.pais.getValue(true);
+                const escuchadas = choicesPE.escuchada.getValue(true);
+
+                filteredPorEscuchar = porEscucharData.filter(row => {
+                    const matchArtista = (row[1] || '').toLowerCase().includes(artista);
+                    const matchDisco = (row[2] || '').toLowerCase().includes(disco);
+                    const matchEstilo = estilos.length === 0 || estilos.includes(row[3] || '');
+                    const matchPais = paises.length === 0 || paises.includes(row[4] || '');
+                    const matchEscuchada = escuchadas.length === 0 || escuchadas.includes(row[6] || '');
+                    return matchArtista && matchDisco && matchEstilo && matchPais && matchEscuchada;
+                });
+                porEscucharCurrentPage = 1;
+                renderTable('porEscuchar');
+            } else {
+                const artista = document.getElementById('filter-e-artista').value.toLowerCase();
+                const estilos = choicesE.estilo.getValue(true);
+                const paises = choicesE.pais.getValue(true);
+                const seguir = choicesE.seguir.getValue(true);
+
+                filteredEscuchadas = escuchadasData.filter(row => {
+                    const matchArtista = (row[1] || '').toLowerCase().includes(artista);
+                    const matchEstilo = estilos.length === 0 || estilos.includes(row[2] || '');
+                    const matchPais = paises.length === 0 || paises.includes(row[3] || '');
+                    const matchSeguir = seguir.length === 0 || seguir.includes(row[5] || '');
+                    return matchArtista && matchEstilo && matchPais && matchSeguir;
+                });
+                escuchadasCurrentPage = 1;
+                renderTable('escuchadas');
+            }
         }
 
         // --- LÓGICA DE LA INTERFAZ (UI) ---
+        function updateTabCounts() {
+            document.getElementById('count-pe').textContent = porEscucharData.length;
+            document.getElementById('count-e').textContent = escuchadasData.length;
+        }
+
         function showTab(tabId) {
             document.querySelectorAll('.tab-content').forEach(tab => tab.style.display = 'none');
             document.querySelectorAll('.tab-button').forEach(button => button.classList.remove('tab-active'));
@@ -255,7 +347,6 @@
             if (activeButton) activeButton.classList.add('tab-active');
         }
 
-        // --- LÓGICA DE LAS LISTAS (TABS 1 Y 2) ---
         function renderTable(type) {
             const tableBodyId = type === 'porEscuchar' ? 'table-body-por-escuchar' : 'table-body-escuchadas';
             const tableBody = document.getElementById(tableBodyId);
@@ -266,7 +357,7 @@
 
             if (!data || data.length === 0) {
                 const colSpan = type === 'porEscuchar' ? 7 : 6;
-                tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-4">No se encontraron resultados.</td></tr>`;
+                tableBody.innerHTML = `<tr><td colspan="${colSpan}" class="text-center py-4">No se encontraron resultados para los filtros aplicados.</td></tr>`;
                 renderPaginationControls(type);
                 return;
             }
@@ -319,16 +410,11 @@
             const btnClass = "pagination-button px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-md hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed";
 
             let html = `<div class="flex items-center justify-center gap-2">`;
-            // Botones de Inicio y Anterior
             html += `<button onclick="changePage('${type}', 1)" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Inicio</button>`;
             html += `<button onclick="changePage('${type}', ${currentPage - 1})" class="${btnClass}" ${currentPage === 1 ? 'disabled' : ''}>Anterior</button>`;
-
-            // Input para elegir página
             html += `<span class="text-sm text-gray-400">Página</span>`;
             html += `<input type="number" value="${currentPage}" onchange="goToPage('${type}', this.value, ${totalPages})" min="1" max="${totalPages}" class="w-16 bg-gray-600 text-center rounded-md p-2 focus:ring-2 focus:ring-blue-500 focus:outline-none">`;
             html += `<span class="text-sm text-gray-400">de ${totalPages}</span>`;
-
-            // Botones de Siguiente y Final
             html += `<button onclick="changePage('${type}', ${currentPage + 1})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Siguiente</button>`;
             html += `<button onclick="changePage('${type}', ${totalPages})" class="${btnClass}" ${currentPage === totalPages ? 'disabled' : ''}>Final</button>`;
             html += `</div>`;
@@ -339,8 +425,6 @@
         function changePage(type, page) {
             const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
             const totalPages = Math.ceil(data.length / ROWS_PER_PAGE);
-            
-            // Validar que la página esté en el rango correcto
             const newPage = Math.max(1, Math.min(page, totalPages));
 
             if (type === 'porEscuchar') {
@@ -372,40 +456,6 @@
             }
             linksHtml += '</div>';
             return linksHtml;
-        }
-
-        function applyFilters(type) {
-            if (type === 'porEscuchar') {
-                const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
-                const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
-                const estilo = document.getElementById('filter-pe-estilo').value.toLowerCase();
-                const pais = document.getElementById('filter-pe-pais').value.toLowerCase();
-                const escuchada = document.getElementById('filter-pe-escuchada').value;
-
-                filteredPorEscuchar = porEscucharData.filter(row => {
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (row[2] || '').toLowerCase().includes(disco) &&
-                           (row[3] || '').toLowerCase().includes(estilo) &&
-                           (row[4] || '').toLowerCase().includes(pais) &&
-                           (escuchada === '' || (row[6] || '') === escuchada);
-                });
-                porEscucharCurrentPage = 1;
-                renderTable('porEscuchar');
-            } else {
-                const artista = document.getElementById('filter-e-artista').value.toLowerCase();
-                const estilo = document.getElementById('filter-e-estilo').value.toLowerCase();
-                const pais = document.getElementById('filter-e-pais').value.toLowerCase();
-                const seguir = document.getElementById('filter-e-seguir').value;
-
-                filteredEscuchadas = escuchadasData.filter(row => {
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (row[2] || '').toLowerCase().includes(estilo) &&
-                           (row[3] || '').toLowerCase().includes(pais) &&
-                           (seguir === '' || (row[5] || '') === seguir);
-                });
-                escuchadasCurrentPage = 1;
-                renderTable('escuchadas');
-            }
         }
         
         function shuffleList(type) {
