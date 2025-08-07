@@ -33,35 +33,44 @@
         input[type=number] {
           -moz-appearance: textfield;
         }
-        /* Estilos para Choices.js en tema oscuro */
+        
+        /* Estilos para Choices.js con alto contraste */
         .choices {
-            background-color: #374151; /* gray-700 */
+            background-color: #e5e7eb; /* gray-200 */
         }
         .choices__inner {
-            background-color: #374151; /* gray-700 */
-            border-color: #4b5563; /* gray-600 */
-            color: #f3f4f6; /* gray-100 - Mayor contraste */
+            background-color: #e5e7eb; /* gray-200 */
+            border-color: #9ca3af; /* gray-400 */
+            color: #1e3a8a; /* blue-900 - Texto azul oscuro */
             min-height: 42px; /* Altura consistente */
             padding: 0.5rem 0.75rem;
             display: flex;
             align-items: center;
+            border-radius: 0.375rem; /* rounded-md */
+            border-width: 1px;
+        }
+        .choices.is-focused .choices__inner {
+            border-color: #3b82f6 !important; /* blue-500 */
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
         }
         .choices__list--dropdown {
-            background-color: #2d3748; /* gray-800 */
-            border-color: #4b5563; /* gray-600 */
+            background-color: #f9fafb; /* gray-50 */
+            border-color: #d1d5db; /* gray-300 */
         }
         .choices__item--choice {
-            color: #f3f4f6; /* gray-100 - Mayor contraste */
+            color: #1e3a8a; /* blue-900 */
         }
         .choices__item--selectable.is-highlighted {
             background-color: #3b82f6; /* blue-500 */
+            color: white;
         }
         .choices__input {
              background-color: transparent;
-             color: #f3f4f6; /* gray-100 - Mayor contraste */
+             color: #1e3a8a; /* blue-900 */
         }
         .choices__item--selected {
             background-color: #3b82f6; /* blue-500 */
+            color: white;
         }
 
         /* Tabla responsiva para móviles */
@@ -154,12 +163,27 @@
             <div id="por-escuchar-list" class="tab-content">
                 <div class="bg-gray-800 p-4 rounded-lg mb-6">
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-center">
-                        <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <select id="filter-pe-estilo" multiple></select>
-                        <select id="filter-pe-pais" multiple></select>
-                        <select id="filter-pe-escuchada" multiple></select>
+                    <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-4 items-end">
+                        <div class="flex flex-col">
+                            <label for="filter-pe-artista" class="text-sm font-medium text-gray-400 mb-1">Artista</label>
+                            <input type="text" id="filter-pe-artista" placeholder="Artista..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-pe-disco" class="text-sm font-medium text-gray-400 mb-1">Disco</label>
+                            <input type="text" id="filter-pe-disco" placeholder="Disco..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-pe-estilo" class="text-sm font-medium text-gray-400 mb-1">Estilo(s)</label>
+                            <select id="filter-pe-estilo" multiple></select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-pe-pais" class="text-sm font-medium text-gray-400 mb-1">País(es)</label>
+                            <select id="filter-pe-pais" multiple></select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-pe-escuchada" class="text-sm font-medium text-gray-400 mb-1">Ya Escuchada?</label>
+                            <select id="filter-pe-escuchada" multiple></select>
+                        </div>
                     </div>
                     <div class="flex items-center justify-end mt-4">
                         <button onclick="shuffleList('porEscuchar')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
@@ -188,11 +212,23 @@
             <div id="escuchadas-list" class="tab-content" style="display: none;">
                 <div class="bg-gray-800 p-4 rounded-lg mb-6">
                     <h3 class="text-xl font-semibold mb-4">Filtros</h3>
-                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-center">
-                        <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-700 border border-gray-600 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
-                        <select id="filter-e-estilo" multiple></select>
-                        <select id="filter-e-pais" multiple></select>
-                        <select id="filter-e-seguir" multiple></select>
+                    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
+                        <div class="flex flex-col">
+                            <label for="filter-e-artista" class="text-sm font-medium text-gray-400 mb-1">Artista</label>
+                            <input type="text" id="filter-e-artista" placeholder="Artista..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-blue-500 focus:outline-none">
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-e-estilo" class="text-sm font-medium text-gray-400 mb-1">Estilo(s)</label>
+                            <select id="filter-e-estilo" multiple></select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-e-pais" class="text-sm font-medium text-gray-400 mb-1">País(es)</label>
+                            <select id="filter-e-pais" multiple></select>
+                        </div>
+                        <div class="flex flex-col">
+                            <label for="filter-e-seguir" class="text-sm font-medium text-gray-400 mb-1">Seguir Escuchando?</label>
+                            <select id="filter-e-seguir" multiple></select>
+                        </div>
                     </div>
                      <div class="flex items-center justify-end mt-4">
                         <button onclick="shuffleList('escuchadas')" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Shuffle Orden</button>
@@ -313,13 +349,13 @@
             const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
             const peEscuchadaOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
 
-            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig('Estilo(s)...'));
+            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig(''));
             choicesPE.estilo.setChoices(peEstilos, 'value', 'label', false);
             
-            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig('País(es)...'));
+            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig(''));
             choicesPE.pais.setChoices(pePaises, 'value', 'label', false);
 
-            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig('Ya Escuchada?'));
+            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig(''));
             choicesPE.escuchada.setChoices(peEscuchadaOpts, 'value', 'label', false);
             
             // Event Listeners para filtros automáticos
@@ -334,13 +370,13 @@
             const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
             const eSeguirOpts = [{value: 'SI', label: 'Sí'}, {value: 'NO', label: 'No'}];
 
-            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig('Estilo(s)...'));
+            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig(''));
             choicesE.estilo.setChoices(eEstilos, 'value', 'label', false);
 
-            choicesE.pais = new Choices('#filter-e-pais', choicesConfig('País(es)...'));
+            choicesE.pais = new Choices('#filter-e-pais', choicesConfig(''));
             choicesE.pais.setChoices(ePaises, 'value', 'label', false);
 
-            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig('Seguir Escuchando?'));
+            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig(''));
             choicesE.seguir.setChoices(eSeguirOpts, 'value', 'label', false);
             
             // Event Listeners para filtros automáticos
@@ -421,7 +457,7 @@
 
             paginatedData.forEach(row => {
                 const tr = document.createElement('tr');
-                tr.className = 'bg-gray-800 border-b border-gray-700 md:border-b-0';
+                tr.className = 'bg-gray-800 border-b border-gray-700';
 
                 if (type === 'porEscuchar') {
                     const linksHtml = generateLinksHtml(row, 7, 14);
