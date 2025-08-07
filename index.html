@@ -540,7 +540,16 @@
                 const url = row[i];
                 const name = LINK_NAMES[i - startIdx];
                 if (url && url.startsWith('http')) {
-                    linksHtml += `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-xs bg-blue-800 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-full transition-colors">${name}</a>`;
+                    let finalUrl = url;
+                    let target = '_blank';
+                    
+                    // Specific logic for Spotify to open the desktop app
+                    if (name === "Spotify" && url.includes('open.spotify.com')) {
+                        finalUrl = url.replace('https://open.spotify.com/', 'spotify:');
+                        target = '_self'; // URI schemes don't need a new tab
+                    }
+
+                    linksHtml += `<a href="${finalUrl}" target="${target}" rel="noopener noreferrer" class="text-xs bg-blue-800 hover:bg-blue-700 text-white font-semibold py-1 px-2 rounded-full transition-colors">${name}</a>`;
                 }
             }
             linksHtml += '</div>';
