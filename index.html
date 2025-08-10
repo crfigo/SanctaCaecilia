@@ -68,6 +68,16 @@
             background-color: #bae6fd; /* Celeste (sky-200) */
             color: #1f2937; /* Texto oscuro para contraste */
         }
+        .ts-dropdown-header {
+            font-weight: bold;
+            border-bottom: 1px solid #d1d5db;
+            cursor: pointer;
+            padding: 8px 12px;
+            color: #1f2937;
+        }
+        .ts-dropdown-header:hover {
+             background-color: #e5e7eb;
+        }
 
         /* Tabla responsiva para móviles */
         @media screen and (max-width: 767px) {
@@ -399,12 +409,31 @@
 
         function initializeFilters() {
             const tomSelectConfig = (placeholder) => ({ 
-                plugins: ['checkbox_options', 'remove_button'],
+                plugins: ['checkbox_options', 'remove_button', 'dropdown_header'],
                 placeholder: placeholder,
                 hidePlaceholder: true,
                 persist: false,
-                create: false
+                create: false,
+                render: {
+                    dropdown_header: () => {
+                        return '<div class="ts-dropdown-header">Seleccionar todos los resultados</div>';
+                    }
+                }
             });
+
+            const setupSelectAll = (tomSelectInstance) => {
+                const header = tomSelectInstance.dropdown.querySelector('.ts-dropdown-header');
+                if (header) {
+                    header.addEventListener('mousedown', (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        const currentItems = tomSelectInstance.getValue();
+                        const filteredItems = tomSelectInstance.currentResults.items.map(item => item.id);
+                        const newItems = [...new Set([...currentItems, ...filteredItems])];
+                        tomSelectInstance.setValue(newItems);
+                    });
+                }
+            };
 
             // --- Filtros "Para Escuchar" ---
             const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
@@ -414,15 +443,19 @@
             
             tomSelectsPE.estilo = new TomSelect('#filter-pe-estilo', tomSelectConfig('Estilo(s)...'));
             tomSelectsPE.estilo.addOptions(peEstilos);
+            setupSelectAll(tomSelectsPE.estilo);
             
             tomSelectsPE.pais = new TomSelect('#filter-pe-pais', tomSelectConfig('País(es)...'));
             tomSelectsPE.pais.addOptions(pePaises);
+            setupSelectAll(tomSelectsPE.pais);
 
             tomSelectsPE.comentario = new TomSelect('#filter-pe-comentario', tomSelectConfig('Comentario(s)...'));
             tomSelectsPE.comentario.addOptions(peComentarios);
+            setupSelectAll(tomSelectsPE.comentario);
 
             tomSelectsPE.escuchada = new TomSelect('#filter-pe-escuchada', tomSelectConfig('Ya Escuchada?'));
             tomSelectsPE.escuchada.addOptions(peEscuchadaOpts);
+            setupSelectAll(tomSelectsPE.escuchada);
             
             document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
             document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
@@ -438,12 +471,15 @@
             
             tomSelectsE.estilo = new TomSelect('#filter-e-estilo', tomSelectConfig('Estilo(s)...'));
             tomSelectsE.estilo.addOptions(eEstilos);
+            setupSelectAll(tomSelectsE.estilo);
             
             tomSelectsE.pais = new TomSelect('#filter-e-pais', tomSelectConfig('País(es)...'));
             tomSelectsE.pais.addOptions(ePaises);
+            setupSelectAll(tomSelectsE.pais);
             
             tomSelectsE.seguir = new TomSelect('#filter-e-seguir', tomSelectConfig('Seguir Escuchando?'));
             tomSelectsE.seguir.addOptions(eSeguirOpts);
+            setupSelectAll(tomSelectsE.seguir);
             
             document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
             tomSelectsE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
