@@ -9,9 +9,9 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- PapaParse para procesar los archivos CSV de Google Sheets de forma segura -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
-    <!-- Choices.js para dropdowns con búsqueda y selección múltiple -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
-    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <!-- Tom Select para dropdowns con búsqueda y selección múltiple -->
+    <link href="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/css/tom-select.default.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/tom-select@2.2.2/dist/js/tom-select.complete.min.js"></script>
     <!-- Chart.js para los gráficos de estadísticas -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
@@ -38,46 +38,35 @@
           -moz-appearance: textfield;
         }
         
-        /* Estilos para Choices.js con alto contraste */
-        .choices {
-            background-color: #e5e7eb; /* gray-200 */
-        }
-        .choices__inner {
+        /* Estilos para Tom Select */
+        .ts-wrapper .ts-control {
             background-color: #e5e7eb; /* gray-200 */
             border-color: #9ca3af; /* gray-400 */
-            color: #1f2937; /* gray-800 */
-            min-height: 42px; /* Altura consistente */
+            min-height: 42px;
+            border-radius: 0.375rem;
             padding: 0.5rem 0.75rem;
-            display: flex;
-            align-items: center;
-            border-radius: 0.375rem; /* rounded-md */
-            border-width: 1px;
         }
-        .choices.is-focused .choices__inner {
-            border-color: #6b7280 !important; /* gray-500 */
+        .ts-wrapper.focus .ts-control {
+            border-color: #6b7280 !important;
             box-shadow: 0 0 0 2px rgba(107, 114, 128, 0.5);
         }
-        .choices__list--dropdown {
-            background-color: #f9fafb; /* gray-50 */
-            border-color: #d1d5db; /* gray-300 */
-            width: max-content; /* Ancho dinámico */
-            min-width: 100%;
-        }
-        .choices__item--choice {
+        .ts-wrapper .ts-control > input {
             color: #1f2937; /* gray-800 */
-            white-space: nowrap; /* Evitar salto de línea */
         }
-        .choices__item--selectable.is-highlighted {
-            background-color: #bae6fd; /* Celeste (sky-200) */
-            color: #1f2937; /* Texto oscuro para contraste */
-        }
-        .choices__input {
-             background-color: transparent;
-             color: #1f2937; /* gray-800 */
-        }
-        .choices__item--selected {
+        .ts-wrapper .ts-control .ts-item {
             background-color: #4b5563; /* gray-600 */
             color: white;
+        }
+        .ts-wrapper .ts-dropdown {
+            background-color: #f9fafb; /* gray-50 */
+            border-color: #d1d5db; /* gray-300 */
+        }
+        .ts-wrapper .ts-dropdown .ts-option {
+            color: #1f2937; /* gray-800 */
+        }
+        .ts-wrapper .ts-dropdown .ts-option.active {
+            background-color: #bae6fd; /* Celeste (sky-200) */
+            color: #1f2937; /* Texto oscuro para contraste */
         }
 
         /* Tabla responsiva para móviles */
@@ -162,6 +151,7 @@
             </button>
             <button onclick="showTab('por-escuchar-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Para Escuchar (Random)</button>
             <button onclick="showTab('escuchadas-random')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Escuchadas (Random)</button>
+            <button onclick="showTab('global-search-tab')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Búsqueda Global</button>
             <button onclick="showTab('stats-tab')" class="tab-button py-2 px-4 rounded-md font-semibold bg-gray-800 hover:bg-gray-700 transition-colors duration-200">Estadísticas</button>
         </nav>
 
@@ -283,8 +273,19 @@
                     <p class="text-gray-400">Haz clic en el botón para obtener un recuerdo aleatorio.</p>
                 </div>
             </div>
+            
+            <!-- Pestaña 5: Búsqueda Global -->
+            <div id="global-search-tab" class="tab-content" style="display: none;">
+                <div class="bg-gray-900 p-4 rounded-lg mb-6">
+                    <h3 class="text-xl font-semibold mb-4">Búsqueda Global de Artistas</h3>
+                    <input type="text" id="global-search-input" placeholder="Escribe el nombre de un artista..." class="w-full bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-gray-500 focus:outline-none">
+                </div>
+                <div id="global-search-results" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <!-- Los resultados de la búsqueda se insertarán aquí -->
+                </div>
+            </div>
 
-            <!-- Pestaña 5: Estadísticas -->
+            <!-- Pestaña 6: Estadísticas -->
             <div id="stats-tab" class="tab-content" style="display: none;">
                 <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                     <!-- Sección de Países -->
@@ -319,9 +320,9 @@
         let filteredPorEscuchar = [];
         let filteredEscuchadas = [];
         
-        // Instancias de Choices.js
-        let choicesPE = {};
-        let choicesE = {};
+        // Instancias de Tom Select
+        let tomSelectsPE = {};
+        let tomSelectsE = {};
 
         // Paginación
         let porEscucharCurrentPage = 1;
@@ -359,6 +360,10 @@
 
                 porEscucharData = peData.slice(peDataStart).filter(row => row[1] && row[1].trim() !== '');
                 escuchadasData = eData.slice(eDataStart).filter(row => row[1] && row[1].trim() !== '');
+
+                // Randomizar el orden inicial
+                for (let i = porEscucharData.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [porEscucharData[i], porEscucharData[j]] = [porEscucharData[j], porEscucharData[i]]; }
+                for (let i = escuchadasData.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [escuchadasData[i], escuchadasData[j]] = [escuchadasData[j], escuchadasData[i]]; }
                 
                 filteredPorEscuchar = [...porEscucharData];
                 filteredEscuchadas = [...escuchadasData];
@@ -392,88 +397,61 @@
             });
         }
 
-        function setupPersistentSearch(choicesInstance) {
-            const inputElement = choicesInstance.input.element;
-            const containerElement = choicesInstance.containerOuter.element;
-            let lastSearchValue = '';
-
-            inputElement.addEventListener('keyup', (event) => {
-                lastSearchValue = event.target.value;
-            });
-
-            containerElement.addEventListener('addItem', () => {
-                if (lastSearchValue) {
-                    setTimeout(() => {
-                        inputElement.value = lastSearchValue;
-                        choicesInstance.showDropdown();
-                        inputElement.dispatchEvent(new Event('keyup', { bubbles: true }));
-                    }, 1);
-                }
-            });
-            
-            containerElement.addEventListener('hideDropdown', () => {
-                lastSearchValue = '';
-            });
-        }
-
         function initializeFilters() {
-            const choicesConfig = () => ({ 
-                removeItemButton: true, 
-                searchPlaceholderValue: 'Buscar...',
-                searchResultLimit: 100,
-                classNames: { containerOuter: 'choices' } 
+            const tomSelectConfig = (placeholder) => ({ 
+                plugins: ['checkbox_options', 'remove_button'],
+                placeholder: placeholder,
+                hidePlaceholder: true,
+                persist: false,
+                create: false
             });
 
             // --- Filtros "Para Escuchar" ---
-            const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const peComentarios = [...new Set(porEscucharData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const peEscuchadaOpts = [...new Set(porEscucharData.map(row => row[6]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const peEstilos = [...new Set(porEscucharData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+            const pePaises = [...new Set(porEscucharData.map(row => row[4]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+            const peComentarios = [...new Set(porEscucharData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+            const peEscuchadaOpts = [...new Set(porEscucharData.map(row => row[6]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
             
-            choicesPE.estilo = new Choices('#filter-pe-estilo', choicesConfig());
-            choicesPE.estilo.setChoices(peEstilos, 'value', 'label', false);
-            setupPersistentSearch(choicesPE.estilo);
+            tomSelectsPE.estilo = new TomSelect('#filter-pe-estilo', tomSelectConfig('Estilo(s)...'));
+            tomSelectsPE.estilo.addOptions(peEstilos);
             
-            choicesPE.pais = new Choices('#filter-pe-pais', choicesConfig());
-            choicesPE.pais.setChoices(pePaises, 'value', 'label', false);
-            setupPersistentSearch(choicesPE.pais);
+            tomSelectsPE.pais = new TomSelect('#filter-pe-pais', tomSelectConfig('País(es)...'));
+            tomSelectsPE.pais.addOptions(pePaises);
 
-            choicesPE.comentario = new Choices('#filter-pe-comentario', choicesConfig());
-            choicesPE.comentario.setChoices(peComentarios, 'value', 'label', false);
-            setupPersistentSearch(choicesPE.comentario);
+            tomSelectsPE.comentario = new TomSelect('#filter-pe-comentario', tomSelectConfig('Comentario(s)...'));
+            tomSelectsPE.comentario.addOptions(peComentarios);
 
-            choicesPE.escuchada = new Choices('#filter-pe-escuchada', choicesConfig());
-            choicesPE.escuchada.setChoices(peEscuchadaOpts, 'value', 'label', false);
-            setupPersistentSearch(choicesPE.escuchada);
+            tomSelectsPE.escuchada = new TomSelect('#filter-pe-escuchada', tomSelectConfig('Ya Escuchada?'));
+            tomSelectsPE.escuchada.addOptions(peEscuchadaOpts);
             
             document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
             document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-estilo').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            document.getElementById('filter-pe-pais').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            document.getElementById('filter-pe-comentario').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            document.getElementById('filter-pe-escuchada').addEventListener('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            tomSelectsPE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            tomSelectsPE.pais.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            tomSelectsPE.comentario.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            tomSelectsPE.escuchada.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
 
             // --- Filtros "Escuchadas" ---
-            const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
-            const eSeguirOpts = [...new Set(escuchadasData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, label: val}));
+            const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+            const ePaises = [...new Set(escuchadasData.map(row => row[3]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+            const eSeguirOpts = [...new Set(escuchadasData.map(row => row[5]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
             
-            choicesE.estilo = new Choices('#filter-e-estilo', choicesConfig());
-            choicesE.estilo.setChoices(eEstilos, 'value', 'label', false);
-            setupPersistentSearch(choicesE.estilo);
+            tomSelectsE.estilo = new TomSelect('#filter-e-estilo', tomSelectConfig('Estilo(s)...'));
+            tomSelectsE.estilo.addOptions(eEstilos);
             
-            choicesE.pais = new Choices('#filter-e-pais', choicesConfig());
-            choicesE.pais.setChoices(ePaises, 'value', 'label', false);
-            setupPersistentSearch(choicesE.pais);
+            tomSelectsE.pais = new TomSelect('#filter-e-pais', tomSelectConfig('País(es)...'));
+            tomSelectsE.pais.addOptions(ePaises);
             
-            choicesE.seguir = new Choices('#filter-e-seguir', choicesConfig());
-            choicesE.seguir.setChoices(eSeguirOpts, 'value', 'label', false);
-            setupPersistentSearch(choicesE.seguir);
+            tomSelectsE.seguir = new TomSelect('#filter-e-seguir', tomSelectConfig('Seguir Escuchando?'));
+            tomSelectsE.seguir.addOptions(eSeguirOpts);
             
             document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
-            document.getElementById('filter-e-estilo').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
-            document.getElementById('filter-e-pais').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
-            document.getElementById('filter-e-seguir').addEventListener('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            tomSelectsE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            tomSelectsE.pais.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            tomSelectsE.seguir.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            
+            // --- Búsqueda Global ---
+            document.getElementById('global-search-input').addEventListener('input', performGlobalSearch);
         }
 
         function clearFilters(type) {
@@ -481,15 +459,15 @@
             if (type === 'porEscuchar') {
                 document.getElementById('filter-pe-artista').value = '';
                 document.getElementById('filter-pe-disco').value = '';
-                choicesPE.estilo.removeActiveItems();
-                choicesPE.pais.removeActiveItems();
-                choicesPE.comentario.removeActiveItems();
-                choicesPE.escuchada.removeActiveItems();
+                tomSelectsPE.estilo.clear();
+                tomSelectsPE.pais.clear();
+                tomSelectsPE.comentario.clear();
+                tomSelectsPE.escuchada.clear();
             } else { // escuchadas
                 document.getElementById('filter-e-artista').value = '';
-                choicesE.estilo.removeActiveItems();
-                choicesE.pais.removeActiveItems();
-                choicesE.seguir.removeActiveItems();
+                tomSelectsE.estilo.clear();
+                tomSelectsE.pais.clear();
+                tomSelectsE.seguir.clear();
             }
             isClearingFilters = false;
             applyFilters(type);
@@ -499,10 +477,10 @@
             if (type === 'porEscuchar') {
                 const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
                 const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
-                const estilos = choicesPE.estilo.getValue(true);
-                const paises = choicesPE.pais.getValue(true);
-                const comentarios = choicesPE.comentario.getValue(true);
-                const escuchadas = choicesPE.escuchada.getValue(true);
+                const estilos = tomSelectsPE.estilo.getValue();
+                const paises = tomSelectsPE.pais.getValue();
+                const comentarios = tomSelectsPE.comentario.getValue();
+                const escuchadas = tomSelectsPE.escuchada.getValue();
                 filteredPorEscuchar = porEscucharData.filter(row => {
                     return (row[1] || '').toLowerCase().includes(artista) &&
                            (row[2] || '').toLowerCase().includes(disco) &&
@@ -515,9 +493,9 @@
                 renderTable('porEscuchar');
             } else {
                 const artista = document.getElementById('filter-e-artista').value.toLowerCase();
-                const estilos = choicesE.estilo.getValue(true);
-                const paises = choicesE.pais.getValue(true);
-                const seguir = choicesE.seguir.getValue(true);
+                const estilos = tomSelectsE.estilo.getValue();
+                const paises = tomSelectsE.pais.getValue();
+                const seguir = tomSelectsE.seguir.getValue();
                 filteredEscuchadas = escuchadasData.filter(row => {
                     return (row[1] || '').toLowerCase().includes(artista) &&
                            (estilos.length === 0 || estilos.includes(row[2] || '')) &&
@@ -656,6 +634,82 @@
             else escuchadasCurrentPage = 1;
             renderTable(type);
         }
+        
+        // --- BÚSQUEDA GLOBAL ---
+        function performGlobalSearch(event) {
+            const searchTerm = event.target.value.toLowerCase().trim();
+            const resultsContainer = document.getElementById('global-search-results');
+            resultsContainer.innerHTML = '';
+
+            if (searchTerm.length < 2) {
+                resultsContainer.innerHTML = '<p class="text-gray-400 text-center col-span-full">Escribe al menos 2 caracteres para buscar.</p>';
+                return;
+            }
+
+            const foundInPE = porEscucharData
+                .filter(row => (row[1] || '').toLowerCase().includes(searchTerm))
+                .map(row => ({ data: row, source: 'Para Escuchar' }));
+
+            const foundInE = escuchadasData
+                .filter(row => (row[1] || '').toLowerCase().includes(searchTerm))
+                .map(row => ({ data: row, source: 'Escuchadas' }));
+
+            const allResults = [...foundInPE, ...foundInE];
+
+            if (allResults.length === 0) {
+                resultsContainer.innerHTML = '<p class="text-gray-400 text-center col-span-full">No se encontraron artistas con ese nombre.</p>';
+                return;
+            }
+
+            allResults.forEach(result => {
+                const card = document.createElement('div');
+                card.className = 'bg-gray-800 rounded-lg p-4 flex flex-col justify-between';
+                let content = '';
+                if (result.source === 'Para Escuchar') {
+                    content = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                <div>
+                                    <h4 class="text-lg font-bold text-white">${result.data[1]}</h4>
+                                    <p class="text-sm text-gray-300">${result.data[2] || ''}</p>
+                                </div>
+                                <span class="text-xs bg-blue-600 text-white font-semibold px-2 py-1 rounded-full whitespace-nowrap">${result.source}</span>
+                            </div>
+                            <div class="text-sm space-y-1 text-gray-400">
+                                <p><strong class="font-semibold text-gray-500">Estilo:</strong> ${result.data[3] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">País:</strong> ${result.data[4] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">Comentario:</strong> ${result.data[5] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">Ya Escuchada?:</strong> ${result.data[6] || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            ${generateLinksHtml(result.data, 7, 14)}
+                        </div>
+                    `;
+                } else { // Escuchadas
+                    content = `
+                        <div>
+                            <div class="flex justify-between items-start mb-2">
+                                 <h4 class="text-lg font-bold text-white">${result.data[1]}</h4>
+                                <span class="text-xs bg-green-600 text-white font-semibold px-2 py-1 rounded-full whitespace-nowrap">${result.source}</span>
+                            </div>
+                            <div class="text-sm space-y-1 text-gray-400">
+                                <p><strong class="font-semibold text-gray-500">Estilo:</strong> ${result.data[2] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">País:</strong> ${result.data[3] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">Comentario:</strong> ${result.data[4] || 'N/A'}</p>
+                                <p><strong class="font-semibold text-gray-500">Seguir Escuchando?:</strong> ${result.data[5] || 'N/A'}</p>
+                            </div>
+                        </div>
+                        <div class="mt-4 pt-4 border-t border-gray-700">
+                            ${generateLinksHtml(result.data, 6, 13)}
+                        </div>
+                    `;
+                }
+                card.innerHTML = content;
+                resultsContainer.appendChild(card);
+            });
+        }
+
 
         // --- LÓGICA DE ESTADÍSTICAS ---
         function calculateStatistics() {
@@ -763,31 +817,33 @@
             if (type === 'porEscuchar') {
                 const linksHtml = generateLinksHtml(randomRow, 7, 14);
                 cardHtml = `
-                    <h2 class="text-3xl font-bold text-gray-300 mb-2">${randomRow[1] || 'Sin Artista'}</h2>
-                    <p class="text-xl text-white mb-4">${randomRow[2] || 'Sin Disco'}</p>
-                    <div class="text-left space-y-2">
-                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Estilo:</strong> ${randomRow[3] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">País:</strong> ${randomRow[4] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Comentario:</strong> ${randomRow[5] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-24 inline-block">Escuchada?:</strong> ${randomRow[6] || 'N/A'}</p>
-                    </div>
-                    <div class="mt-6">
-                        <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
-                        ${linksHtml}
+                    <div class="text-left">
+                        <div class="bg-gray-700 p-3 text-center rounded-t-lg">
+                            <h2 class="text-xl font-bold text-white">${randomRow[1] || 'Sin Artista'}</h2>
+                        </div>
+                        <div class="divide-y divide-gray-700">
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Disco:</strong> <span>${randomRow[2] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Estilo:</strong> <span>${randomRow[3] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">País:</strong> <span>${randomRow[4] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Comentario:</strong> <span>${randomRow[5] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Ya Escuchada?:</strong> <span>${randomRow[6] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between items-center"><strong class="font-semibold text-gray-400 mr-4">Enlaces:</strong> <div class="flex-grow flex justify-end">${linksHtml}</div></div>
+                        </div>
                     </div>`;
             } else {
                 const linksHtml = generateLinksHtml(randomRow, 6, 13);
                 cardHtml = `
-                    <h2 class="text-3xl font-bold text-gray-300 mb-2">${randomRow[1] || 'Sin Artista'}</h2>
-                    <div class="text-left space-y-2">
-                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Estilo:</strong> ${randomRow[2] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">País:</strong> ${randomRow[3] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Comentario:</strong> ${randomRow[4] || 'N/A'}</p>
-                        <p><strong class="font-semibold text-gray-400 w-32 inline-block">Seguir Escuchando?:</strong> ${randomRow[5] || 'N/A'}</p>
-                    </div>
-                    <div class="mt-6">
-                        <h4 class="font-semibold text-lg mb-3">Enlaces</h4>
-                        ${linksHtml}
+                    <div class="text-left">
+                        <div class="bg-gray-700 p-3 text-center rounded-t-lg">
+                            <h2 class="text-xl font-bold text-white">${randomRow[1] || 'Sin Artista'}</h2>
+                        </div>
+                        <div class="divide-y divide-gray-700">
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Estilo:</strong> <span>${randomRow[2] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">País:</strong> <span>${randomRow[3] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Comentario:</strong> <span>${randomRow[4] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between"><strong class="font-semibold text-gray-400 mr-4">Seguir Escuchando?:</strong> <span>${randomRow[5] || 'N/A'}</span></div>
+                            <div class="p-3 flex justify-between items-center"><strong class="font-semibold text-gray-400 mr-4">Enlaces:</strong> <div class="flex-grow flex justify-end">${linksHtml}</div></div>
+                        </div>
                     </div>`;
             }
             cardContainer.innerHTML = cardHtml;
