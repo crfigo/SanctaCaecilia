@@ -68,16 +68,6 @@
             background-color: #bae6fd; /* Celeste (sky-200) */
             color: #1f2937; /* Texto oscuro para contraste */
         }
-        .ts-dropdown-header {
-            font-weight: bold;
-            border-bottom: 1px solid #d1d5db;
-            cursor: pointer;
-            padding: 8px 12px;
-            color: #1f2937;
-        }
-        .ts-dropdown-header:hover {
-             background-color: #e5e7eb;
-        }
 
         /* Tabla responsiva para móviles */
         @media screen and (max-width: 767px) {
@@ -409,16 +399,17 @@
 
         function initializeFilters() {
             const tomSelectConfig = (placeholder) => ({ 
-                plugins: ['checkbox_options', 'remove_button', 'dropdown_header'],
+                plugins: {
+                    'checkbox_options': {},
+                    'remove_button': {},
+                    'dropdown_header': {
+                        'title': 'Seleccionar todos los resultados'
+                    }
+                },
                 placeholder: placeholder,
                 hidePlaceholder: true,
                 persist: false,
-                create: false,
-                render: {
-                    dropdown_header: () => {
-                        return '<div class="ts-dropdown-header">Seleccionar todos los resultados</div>';
-                    }
-                }
+                create: false
             });
 
             const setupSelectAll = (tomSelectInstance) => {
