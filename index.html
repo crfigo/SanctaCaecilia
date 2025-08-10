@@ -344,8 +344,21 @@
                     fetchAndParseCSV(URL_ESCUCHADAS)
                 ]);
                 
-                porEscucharData = peData.slice(5).filter(row => row[1]);
-                escuchadasData = eData.slice(5).filter(row => row[1]);
+                const findDataStart = (data) => {
+                    let headerIndex = -1;
+                    for (let i = 0; i < data.length; i++) {
+                        if (data[i] && data[i][1] && data[i][1].trim() === 'Artista') {
+                            headerIndex = i;
+                        }
+                    }
+                    return headerIndex === -1 ? 1 : headerIndex + 1;
+                };
+
+                const peDataStart = findDataStart(peData);
+                const eDataStart = findDataStart(eData);
+
+                porEscucharData = peData.slice(peDataStart).filter(row => row[1] && row[1].trim() !== '');
+                escuchadasData = eData.slice(eDataStart).filter(row => row[1] && row[1].trim() !== '');
                 
                 filteredPorEscuchar = [...porEscucharData];
                 filteredEscuchadas = [...escuchadasData];
@@ -407,7 +420,7 @@
             const choicesConfig = () => ({ 
                 removeItemButton: true, 
                 searchPlaceholderValue: 'Buscar...',
-                searchHint: '',
+                searchResultLimit: 100,
                 classNames: { containerOuter: 'choices' } 
             });
 
