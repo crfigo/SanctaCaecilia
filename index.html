@@ -202,12 +202,12 @@
                     <table class="min-w-full text-sm text-left text-gray-300 responsive-table">
                         <thead class="text-xs text-gray-100 uppercase bg-gray-800">
                             <tr>
-                                <th class="px-6 py-3">Artista</th>
-                                <th class="px-6 py-3">Disco</th>
-                                <th class="px-6 py-3">Estilo</th>
-                                <th class="px-6 py-3">País</th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('porEscuchar', 1)">Artista <span id="sort-icon-pe-1"></span></th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('porEscuchar', 2)">Disco <span id="sort-icon-pe-2"></span></th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('porEscuchar', 3)">Estilo <span id="sort-icon-pe-3"></span></th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('porEscuchar', 4)">País <span id="sort-icon-pe-4"></span></th>
                                 <th class="px-6 py-3">Comentario</th>
-                                <th class="px-6 py-3">Ya Escuchada?</th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('porEscuchar', 6)">Ya Escuchada? <span id="sort-icon-pe-6"></span></th>
                                 <th class="px-6 py-3">Links</th>
                             </tr>
                         </thead>
@@ -254,11 +254,11 @@
                     <table class="min-w-full text-sm text-left text-gray-300 responsive-table">
                         <thead class="text-xs text-gray-100 uppercase bg-gray-800">
                             <tr>
-                                <th class="px-6 py-3">Artista</th>
-                                <th class="px-6 py-3">Estilo</th>
-                                <th class="px-6 py-3">País</th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('escuchadas', 1)">Artista <span id="sort-icon-e-1"></span></th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('escuchadas', 2)">Estilo <span id="sort-icon-e-2"></span></th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('escuchadas', 3)">País <span id="sort-icon-e-3"></span></th>
                                 <th class="px-6 py-3">Comentario</th>
-                                <th class="px-6 py-3">Seguir Escuchando?</th>
+                                <th class="px-6 py-3 cursor-pointer" onclick="sortTable('escuchadas', 5)">Seguir Escuchando? <span id="sort-icon-e-5"></span></th>
                                 <th class="px-6 py-3">Links</th>
                             </tr>
                         </thead>
@@ -338,6 +338,10 @@
         let porEscucharCurrentPage = 1;
         let escuchadasCurrentPage = 1;
         const ROWS_PER_PAGE = 10;
+        
+        // Ordenamiento
+        let porEscucharSort = { key: null, dir: 'asc' };
+        let escuchadasSort = { key: null, dir: 'asc' };
 
         // Estadísticas
         let countryStats, styleStats;
@@ -434,13 +438,13 @@
             tomSelectsPE.escuchada = new TomSelect('#filter-pe-escuchada', tomSelectConfig('Ya Escuchada?'));
             tomSelectsPE.escuchada.addOptions(peEscuchadaOpts);
             
-            document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-comentario-text').addEventListener('input', () => applyFilters('porEscuchar'));
-            tomSelectsPE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            tomSelectsPE.pais.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            tomSelectsPE.comentario.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
-            tomSelectsPE.escuchada.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
+            document.getElementById('filter-pe-artista').addEventListener('input', () => applyFiltersAndRefreshDropdowns('porEscuchar'));
+            document.getElementById('filter-pe-disco').addEventListener('input', () => applyFiltersAndRefreshDropdowns('porEscuchar'));
+            document.getElementById('filter-pe-comentario-text').addEventListener('input', () => applyFiltersAndRefreshDropdowns('porEscuchar'));
+            tomSelectsPE.estilo.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('porEscuchar'); });
+            tomSelectsPE.pais.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('porEscuchar'); });
+            tomSelectsPE.comentario.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('porEscuchar'); });
+            tomSelectsPE.escuchada.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('porEscuchar'); });
 
             // --- Filtros "Escuchadas" ---
             const eEstilos = [...new Set(escuchadasData.map(row => row[2]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
@@ -456,11 +460,11 @@
             tomSelectsE.seguir = new TomSelect('#filter-e-seguir', tomSelectConfig('Seguir Escuchando?'));
             tomSelectsE.seguir.addOptions(eSeguirOpts);
             
-            document.getElementById('filter-e-artista').addEventListener('input', () => applyFilters('escuchadas'));
-            document.getElementById('filter-e-comentario').addEventListener('input', () => applyFilters('escuchadas'));
-            tomSelectsE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
-            tomSelectsE.pais.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
-            tomSelectsE.seguir.on('change', () => { if (!isClearingFilters) applyFilters('escuchadas'); });
+            document.getElementById('filter-e-artista').addEventListener('input', () => applyFiltersAndRefreshDropdowns('escuchadas'));
+            document.getElementById('filter-e-comentario').addEventListener('input', () => applyFiltersAndRefreshDropdowns('escuchadas'));
+            tomSelectsE.estilo.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('escuchadas'); });
+            tomSelectsE.pais.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('escuchadas'); });
+            tomSelectsE.seguir.on('change', () => { if (!isClearingFilters) applyFiltersAndRefreshDropdowns('escuchadas'); });
             
             // --- Búsqueda Global ---
             document.getElementById('global-search-input').addEventListener('input', performGlobalSearch);
@@ -472,65 +476,114 @@
                 document.getElementById('filter-pe-artista').value = '';
                 document.getElementById('filter-pe-disco').value = '';
                 document.getElementById('filter-pe-comentario-text').value = '';
-                tomSelectsPE.estilo.clear();
-                tomSelectsPE.pais.clear();
-                tomSelectsPE.comentario.clear();
-                tomSelectsPE.escuchada.clear();
+                tomSelectsPE.estilo.clear(true);
+                tomSelectsPE.pais.clear(true);
+                tomSelectsPE.comentario.clear(true);
+                tomSelectsPE.escuchada.clear(true);
             } else { // escuchadas
                 document.getElementById('filter-e-artista').value = '';
                 document.getElementById('filter-e-comentario').value = '';
-                tomSelectsE.estilo.clear();
-                tomSelectsE.pais.clear();
-                tomSelectsE.seguir.clear();
+                tomSelectsE.estilo.clear(true);
+                tomSelectsE.pais.clear(true);
+                tomSelectsE.seguir.clear(true);
             }
             isClearingFilters = false;
-            applyFilters(type);
+            applyFiltersAndRefreshDropdowns(type);
         }
+        
+        function applyFiltersAndRefreshDropdowns(type) {
+            const baseData = type === 'porEscuchar' ? porEscucharData : escuchadasData;
+            const tomSelects = type === 'porEscuchar' ? tomSelectsPE : tomSelectsE;
+            const filterInputs = {};
+            const filterSelects = {};
+            const filterConfig = {};
 
-        function applyFilters(type) {
             if (type === 'porEscuchar') {
-                const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
-                const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
-                const estilos = tomSelectsPE.estilo.getValue();
-                const paises = tomSelectsPE.pais.getValue();
-                const comentarios = tomSelectsPE.comentario.getValue();
-                const comentarioText = document.getElementById('filter-pe-comentario-text').value.toLowerCase();
-                const searchWordsPE = comentarioText.split(' ').filter(w => w.length > 0);
-                const escuchadas = tomSelectsPE.escuchada.getValue();
-                filteredPorEscuchar = porEscucharData.filter(row => {
-                    const commentText = (row[5] || '').toLowerCase();
-                    const matchComentarioText = searchWordsPE.length === 0 || searchWordsPE.every(word => commentText.includes(word));
-
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (row[2] || '').toLowerCase().includes(disco) &&
-                           (estilos.length === 0 || estilos.includes(row[3] || '')) &&
-                           (paises.length === 0 || paises.includes(row[4] || '')) &&
-                           (comentarios.length === 0 || comentarios.includes(row[5] || '')) &&
-                           matchComentarioText &&
-                           (escuchadas.length === 0 || escuchadas.includes(row[6] || ''));
+                Object.assign(filterInputs, {
+                    artista: { el: document.getElementById('filter-pe-artista'), col: 1 },
+                    disco: { el: document.getElementById('filter-pe-disco'), col: 2 },
+                    comentarioText: { el: document.getElementById('filter-pe-comentario-text'), col: 5, multiWord: true }
                 });
-                porEscucharCurrentPage = 1;
-                renderTable('porEscuchar');
+                Object.assign(filterSelects, {
+                    estilos: { instance: tomSelects.estilo, col: 3 },
+                    paises: { instance: tomSelects.pais, col: 4 },
+                    comentarios: { instance: tomSelects.comentario, col: 5 },
+                    escuchadas: { instance: tomSelects.escuchada, col: 6 }
+                });
             } else {
-                const artista = document.getElementById('filter-e-artista').value.toLowerCase();
-                const estilos = tomSelectsE.estilo.getValue();
-                const paises = tomSelectsE.pais.getValue();
-                const comentario = document.getElementById('filter-e-comentario').value.toLowerCase();
-                const searchWordsE = comentario.split(' ').filter(w => w.length > 0);
-                const seguir = tomSelectsE.seguir.getValue();
-                filteredEscuchadas = escuchadasData.filter(row => {
-                    const commentText = (row[4] || '').toLowerCase();
-                    const matchComentario = searchWordsE.length === 0 || searchWordsE.every(word => commentText.includes(word));
-
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (estilos.length === 0 || estilos.includes(row[2] || '')) &&
-                           (paises.length === 0 || paises.includes(row[3] || '')) &&
-                           matchComentario &&
-                           (seguir.length === 0 || seguir.includes(row[5] || ''));
+                Object.assign(filterInputs, {
+                    artista: { el: document.getElementById('filter-e-artista'), col: 1 },
+                    comentarioText: { el: document.getElementById('filter-e-comentario'), col: 4, multiWord: true }
                 });
-                escuchadasCurrentPage = 1;
-                renderTable('escuchadas');
+                Object.assign(filterSelects, {
+                    estilos: { instance: tomSelects.estilo, col: 2 },
+                    paises: { instance: tomSelects.pais, col: 3 },
+                    seguir: { instance: tomSelects.seguir, col: 5 }
+                });
             }
+
+            // 1. Get current values for all filters
+            const currentValues = {};
+            for (const key in filterInputs) {
+                currentValues[key] = filterInputs[key].el.value.toLowerCase();
+            }
+            for (const key in filterSelects) {
+                currentValues[key] = filterSelects[key].instance.getValue();
+            }
+
+            // 2. Define a generic row checker
+            const checkRow = (row, filtersToCheck) => {
+                for (const key in filtersToCheck) {
+                    if (filterInputs[key]) {
+                        const cellValue = (row[filterInputs[key].col] || '').toLowerCase();
+                        const filterValue = filtersToCheck[key];
+                        if (filterInputs[key].multiWord) {
+                            const searchWords = filterValue.split(' ').filter(w => w.length > 0);
+                            if (searchWords.length > 0 && !searchWords.every(word => cellValue.includes(word))) return false;
+                        } else {
+                            if (filterValue && !cellValue.includes(filterValue)) return false;
+                        }
+                    }
+                    if (filterSelects[key]) {
+                        const cellValue = row[filterSelects[key].col] || '';
+                        const filterValues = filtersToCheck[key];
+                        if (filterValues.length > 0 && !filterValues.includes(cellValue)) return false;
+                    }
+                }
+                return true;
+            };
+
+            // 3. Filter final data for table display
+            const finalFilteredData = baseData.filter(row => checkRow(row, currentValues));
+            if (type === 'porEscuchar') {
+                filteredPorEscuchar = finalFilteredData;
+            } else {
+                filteredEscuchadas = finalFilteredData;
+            }
+
+            // 4. Update dropdown options
+            for (const key in filterSelects) {
+                const { instance, col } = filterSelects[key];
+                const tempFilters = { ...currentValues };
+                tempFilters[key] = []; // Exclude self from filtering
+                
+                const availableData = baseData.filter(row => checkRow(row, tempFilters));
+                const availableOptions = [...new Set(availableData.map(row => row[col]).filter(Boolean))].sort().map(val => ({value: val, text: val}));
+                
+                instance.clearOptions();
+                instance.addOptions(availableOptions);
+                instance.setValue(currentValues[key], true);
+            }
+
+            // 5. Render table
+            if (type === 'porEscuchar') {
+                porEscucharCurrentPage = 1;
+                porEscucharSort = { key: null, dir: 'asc' };
+            } else {
+                escuchadasCurrentPage = 1;
+                escuchadasSort = { key: null, dir: 'asc' };
+            }
+            renderTable(type);
         }
 
         // --- LÓGICA DE LA INTERFAZ (UI) ---
@@ -592,6 +645,7 @@
                 tableBody.appendChild(tr);
             });
             renderPaginationControls(type);
+            updateSortIcons(type);
         }
         
         function renderPaginationControls(type) {
@@ -656,9 +710,51 @@
                 const j = Math.floor(Math.random() * (i + 1));
                 [data[i], data[j]] = [data[j], data[i]];
             }
+            if (type === 'porEscuchar') {
+                porEscucharCurrentPage = 1;
+                porEscucharSort = { key: null, dir: 'asc' };
+            } else {
+                escuchadasCurrentPage = 1;
+                escuchadasSort = { key: null, dir: 'asc' };
+            }
+            renderTable(type);
+        }
+        
+        // --- ORDENAMIENTO DE TABLAS ---
+        function sortTable(type, columnKey) {
+            const sortState = type === 'porEscuchar' ? porEscucharSort : escuchadasSort;
+            const data = type === 'porEscuchar' ? filteredPorEscuchar : filteredEscuchadas;
+
+            const newDir = sortState.key === columnKey && sortState.dir === 'asc' ? 'desc' : 'asc';
+            sortState.key = columnKey;
+            sortState.dir = newDir;
+
+            data.sort((a, b) => {
+                const valA = a[columnKey] || '';
+                const valB = b[columnKey] || '';
+                const comparison = valA.localeCompare(valB, undefined, { numeric: true });
+                return sortState.dir === 'asc' ? comparison : -comparison;
+            });
+
             if (type === 'porEscuchar') porEscucharCurrentPage = 1;
             else escuchadasCurrentPage = 1;
+
             renderTable(type);
+        }
+
+        function updateSortIcons(type) {
+            const sortState = type === 'porEscuchar' ? porEscucharSort : escuchadasSort;
+            const prefix = type === 'porEscuchar' ? 'pe' : 'e';
+            
+            // Limpiar todos los íconos de esa tabla
+            document.querySelectorAll(`[id^=sort-icon-${prefix}-]`).forEach(span => span.textContent = '');
+
+            if (sortState.key !== null) {
+                const iconSpan = document.getElementById(`sort-icon-${prefix}-${sortState.key}`);
+                if (iconSpan) {
+                    iconSpan.textContent = sortState.dir === 'asc' ? ' ▲' : ' ▼';
+                }
+            }
         }
         
         // --- BÚSQUEDA GLOBAL ---
