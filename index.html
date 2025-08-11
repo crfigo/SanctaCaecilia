@@ -185,12 +185,12 @@
                     </div>
                     <div class="flex flex-wrap items-end justify-between mt-4 gap-4">
                         <div class="flex flex-col flex-grow min-w-[200px]">
-                            <label for="filter-pe-comentario" class="text-sm font-medium text-gray-400 mb-1">Seleccionar Comentario</label>
+                            <label for="filter-pe-comentario" class="text-sm font-medium text-gray-400 mb-1">Comentario</label>
                             <select id="filter-pe-comentario" multiple></select>
                         </div>
                         <div class="flex flex-col flex-grow min-w-[200px]">
-                            <label for="filter-pe-comentario-text" class="text-sm font-medium text-gray-400 mb-1">Buscar en Comentario</label>
-                            <input type="text" id="filter-pe-comentario-text" placeholder="Texto en comentario..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-gray-500 focus:outline-none">
+                            <label for="filter-pe-general-search" class="text-sm font-medium text-gray-400 mb-1">Buscar</label>
+                            <input type="text" id="filter-pe-general-search" placeholder="Buscar en todos los campos..." class="bg-gray-200 border-gray-400 text-gray-900 placeholder-gray-500 rounded-md p-2 h-[42px] focus:ring-2 focus:ring-gray-500 focus:outline-none">
                         </div>
                         <div class="flex items-center gap-4">
                             <button onclick="clearFilters('porEscuchar')" class="bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-4 rounded-md transition-colors">Limpiar Filtros</button>
@@ -441,7 +441,7 @@
             
             document.getElementById('filter-pe-artista').addEventListener('input', () => applyFilters('porEscuchar'));
             document.getElementById('filter-pe-disco').addEventListener('input', () => applyFilters('porEscuchar'));
-            document.getElementById('filter-pe-comentario-text').addEventListener('input', () => applyFilters('porEscuchar'));
+            document.getElementById('filter-pe-general-search').addEventListener('input', () => applyFilters('porEscuchar'));
             tomSelectsPE.estilo.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
             tomSelectsPE.pais.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
             tomSelectsPE.comentario.on('change', () => { if (!isClearingFilters) applyFilters('porEscuchar'); });
@@ -476,7 +476,7 @@
             if (type === 'porEscuchar') {
                 document.getElementById('filter-pe-artista').value = '';
                 document.getElementById('filter-pe-disco').value = '';
-                document.getElementById('filter-pe-comentario-text').value = '';
+                document.getElementById('filter-pe-general-search').value = '';
                 tomSelectsPE.estilo.clear();
                 tomSelectsPE.pais.clear();
                 tomSelectsPE.comentario.clear();
@@ -499,20 +499,21 @@
                 const estilos = tomSelectsPE.estilo.getValue();
                 const paises = tomSelectsPE.pais.getValue();
                 const comentarios = tomSelectsPE.comentario.getValue();
-                const comentarioText = document.getElementById('filter-pe-comentario-text').value.toLowerCase();
-                const searchWordsPE = comentarioText.split(' ').filter(w => w.length > 0);
+                const generalSearch = document.getElementById('filter-pe-general-search').value.toLowerCase();
+                const searchWords = generalSearch.split(' ').filter(w => w.length > 0);
                 const escuchadas = tomSelectsPE.escuchada.getValue();
+                
                 filteredPorEscuchar = porEscucharData.filter(row => {
-                    const commentText = (row[5] || '').toLowerCase();
-                    const matchComentarioText = searchWordsPE.length === 0 || searchWordsPE.every(word => commentText.includes(word));
+                    const rowText = [row[1], row[2], row[3], row[4], row[5], row[6]].join(' ').toLowerCase();
+                    const matchGeneralSearch = searchWords.length === 0 || searchWords.every(word => rowText.includes(word));
 
                     return (row[1] || '').toLowerCase().includes(artista) &&
                            (row[2] || '').toLowerCase().includes(disco) &&
                            (estilos.length === 0 || estilos.includes(row[3] || '')) &&
                            (paises.length === 0 || paises.includes(row[4] || '')) &&
                            (comentarios.length === 0 || comentarios.includes(row[5] || '')) &&
-                           matchComentarioText &&
-                           (escuchadas.length === 0 || escuchadas.includes(row[6] || ''));
+                           (escuchadas.length === 0 || escuchadas.includes(row[6] || '')) &&
+                           matchGeneralSearch;
                 });
                 porEscucharCurrentPage = 1;
                 porEscucharSort = { key: null, dir: 'asc' };
