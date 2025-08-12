@@ -160,7 +160,7 @@
             <!-- Pestaña 1: Para Escuchar - Lista -->
             <div id="por-escuchar-list" class="tab-content">
                 <div class="bg-gray-900 p-4 rounded-lg mb-6">
-                    <h3 class="text-xl font-semibold mb-4">Filtros</h3>
+                    <h3 class="text-xl font-semibold mb-4">Filtros <span id="filter-count-pe" class="text-base font-normal text-gray-400"></span></h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4 items-end">
                         <div class="flex flex-col">
                             <label for="filter-pe-artista" class="text-sm font-medium text-gray-400 mb-1">Artista</label>
@@ -220,7 +220,7 @@
             <!-- Pestaña 2: Escuchadas - Lista -->
             <div id="escuchadas-list" class="tab-content" style="display: none;">
                 <div class="bg-gray-900 p-4 rounded-lg mb-6">
-                    <h3 class="text-xl font-semibold mb-4">Filtros</h3>
+                    <h3 class="text-xl font-semibold mb-4">Filtros <span id="filter-count-e" class="text-base font-normal text-gray-400"></span></h3>
                     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 items-end">
                         <div class="flex flex-col">
                             <label for="filter-e-artista" class="text-sm font-medium text-gray-400 mb-1">Artista</label>
@@ -385,8 +385,8 @@
                 updateTabCounts();
                 initializeFilters();
                 calculateStatistics();
-                renderTable('porEscuchar');
-                renderTable('escuchadas');
+                applyFilters('porEscuchar');
+                applyFilters('escuchadas');
 
             } catch (error) {
                 console.error("Error al cargar los datos:", error);
@@ -493,51 +493,75 @@
         }
         
         function applyFilters(type) {
+            let data, countElementId;
             if (type === 'porEscuchar') {
-                const artista = document.getElementById('filter-pe-artista').value.toLowerCase();
-                const disco = document.getElementById('filter-pe-disco').value.toLowerCase();
-                const estilos = tomSelectsPE.estilo.getValue();
-                const paises = tomSelectsPE.pais.getValue();
-                const comentarios = tomSelectsPE.comentario.getValue();
-                const generalSearch = document.getElementById('filter-pe-general-search').value.toLowerCase();
-                const searchWords = generalSearch.split(' ').filter(w => w.length > 0);
-                const escuchadas = tomSelectsPE.escuchada.getValue();
-                
-                filteredPorEscuchar = porEscucharData.filter(row => {
-                    const rowText = [row[1], row[2], row[3], row[4], row[5], row[6]].join(' ').toLowerCase();
-                    const matchGeneralSearch = searchWords.length === 0 || searchWords.every(word => rowText.includes(word));
+                data = porEscucharData;
+                countElementId = 'filter-count-pe';
+            } else {
+                data = escuchadasData;
+                countElementId = 'filter-count-e';
+            }
 
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (row[2] || '').toLowerCase().includes(disco) &&
-                           (estilos.length === 0 || estilos.includes(row[3] || '')) &&
-                           (paises.length === 0 || paises.includes(row[4] || '')) &&
-                           (comentarios.length === 0 || comentarios.includes(row[5] || '')) &&
-                           (escuchadas.length === 0 || escuchadas.includes(row[6] || '')) &&
-                           matchGeneralSearch;
-                });
+            const filterValues = getFilterValues(type);
+            const filteredData = data.filter(row => checkRow(row, filterValues, type));
+
+            if (type === 'porEscuchar') {
+                filteredPorEscuchar = filteredData;
                 porEscucharCurrentPage = 1;
                 porEscucharSort = { key: null, dir: 'asc' };
-                renderTable('porEscuchar');
             } else {
-                const artista = document.getElementById('filter-e-artista').value.toLowerCase();
-                const estilos = tomSelectsE.estilo.getValue();
-                const paises = tomSelectsE.pais.getValue();
-                const comentario = document.getElementById('filter-e-comentario').value.toLowerCase();
-                const searchWordsE = comentario.split(' ').filter(w => w.length > 0);
-                const seguir = tomSelectsE.seguir.getValue();
-                filteredEscuchadas = escuchadasData.filter(row => {
-                    const commentText = (row[4] || '').toLowerCase();
-                    const matchComentario = searchWordsE.length === 0 || searchWordsE.every(word => commentText.includes(word));
-
-                    return (row[1] || '').toLowerCase().includes(artista) &&
-                           (estilos.length === 0 || estilos.includes(row[2] || '')) &&
-                           (paises.length === 0 || paises.includes(row[3] || '')) &&
-                           matchComentario &&
-                           (seguir.length === 0 || seguir.includes(row[5] || ''));
-                });
+                filteredEscuchadas = filteredData;
                 escuchadasCurrentPage = 1;
                 escuchadasSort = { key: null, dir: 'asc' };
-                renderTable('escuchadas');
+            }
+            
+            document.getElementById(countElementId).textContent = `(${filteredData.length} resultados)`;
+            renderTable(type);
+        }
+
+        function getFilterValues(type) {
+            const values = {};
+            if (type === 'porEscuchar') {
+                values.artista = document.getElementById('filter-pe-artista').value.toLowerCase();
+                values.disco = document.getElementById('filter-pe-disco').value.toLowerCase();
+                values.estilos = tomSelectsPE.estilo.getValue();
+                values.paises = tomSelectsPE.pais.getValue();
+                values.comentarios = tomSelectsPE.comentario.getValue();
+                values.generalSearch = document.getElementById('filter-pe-general-search').value.toLowerCase();
+                values.escuchadas = tomSelectsPE.escuchada.getValue();
+            } else {
+                values.artista = document.getElementById('filter-e-artista').value.toLowerCase();
+                values.estilos = tomSelectsE.estilo.getValue();
+                values.paises = tomSelectsE.pais.getValue();
+                values.comentario = document.getElementById('filter-e-comentario').value.toLowerCase();
+                values.seguir = tomSelectsE.seguir.getValue();
+            }
+            return values;
+        }
+
+        function checkRow(row, filters, type) {
+            if (type === 'porEscuchar') {
+                const searchWords = filters.generalSearch.split(' ').filter(w => w.length > 0);
+                const rowText = [row[1], row[2], row[3], row[4], row[5], row[6]].join(' ').toLowerCase();
+                const matchGeneralSearch = searchWords.length === 0 || searchWords.every(word => rowText.includes(word));
+
+                return (row[1] || '').toLowerCase().includes(filters.artista) &&
+                       (row[2] || '').toLowerCase().includes(filters.disco) &&
+                       (filters.estilos.length === 0 || filters.estilos.includes(row[3] || '')) &&
+                       (filters.paises.length === 0 || filters.paises.includes(row[4] || '')) &&
+                       (filters.comentarios.length === 0 || filters.comentarios.includes(row[5] || '')) &&
+                       (filters.escuchadas.length === 0 || filters.escuchadas.includes(row[6] || '')) &&
+                       matchGeneralSearch;
+            } else {
+                const searchWords = filters.comentario.split(' ').filter(w => w.length > 0);
+                const commentText = (row[4] || '').toLowerCase();
+                const matchComentario = searchWords.length === 0 || searchWords.every(word => commentText.includes(word));
+
+                return (row[1] || '').toLowerCase().includes(filters.artista) &&
+                       (filters.estilos.length === 0 || filters.estilos.includes(row[2] || '')) &&
+                       (filters.paises.length === 0 || filters.paises.includes(row[3] || '')) &&
+                       matchComentario &&
+                       (filters.seguir.length === 0 || filters.seguir.includes(row[5] || ''));
             }
         }
 
