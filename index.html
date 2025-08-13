@@ -814,8 +814,9 @@
 
         // --- LÓGICA DE ESTADÍSTICAS ---
         function calculateStatistics() {
+            const porEscucharForStats = porEscucharData.filter(row => (row[6] || '').toUpperCase() !== 'SI');
             const allData = [
-                ...porEscucharData.map(row => ({ style: row[3], country: row[4] })),
+                ...porEscucharForStats.map(row => ({ style: row[3], country: row[4] })),
                 ...escuchadasData.map(row => ({ style: row[2], country: row[3] }))
             ];
 
